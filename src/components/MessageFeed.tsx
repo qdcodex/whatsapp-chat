@@ -1,0 +1,40 @@
+import { useRef, useEffect } from 'react';
+import type { Message } from '@/types';
+import MessageBubble from './MessageBubble';
+import { MessageSquare } from 'lucide-react';
+
+interface MessageFeedProps {
+  messages: Message[];
+  isAdmin?: boolean;
+}
+
+const MessageFeed = ({ messages, isAdmin = false }: MessageFeedProps) => {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8">
+        <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
+        <p className="text-lg font-medium">No messages yet</p>
+        <p className="text-sm mt-1">
+          {isAdmin ? 'Send your first broadcast message' : 'Messages will appear here'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin bg-chat-bg">
+      {messages.map((msg) => (
+        <MessageBubble key={msg.id} message={msg} isOutgoing={isAdmin} />
+      ))}
+      <div ref={bottomRef} />
+    </div>
+  );
+};
+
+export default MessageFeed;

@@ -57,6 +57,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chat: {
+          bg: "hsl(var(--chat-bg))",
+          "bubble-out": "hsl(var(--chat-bubble-out))",
+          "bubble-in": "hsl(var(--chat-bubble-in))",
+          timestamp: "hsl(var(--chat-timestamp))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

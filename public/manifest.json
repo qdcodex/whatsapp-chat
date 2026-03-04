@@ -1,0 +1,16 @@
+{
+  "name": "BroadcastHub",
+  "short_name": "BroadcastHub",
+  "description": "Real-time broadcast messaging platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#25a879",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
