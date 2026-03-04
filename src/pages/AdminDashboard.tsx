@@ -1,0 +1,170 @@
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { useWorkspaceStore } from '@/stores/workspaceStore';
+import MessageFeed from '@/components/MessageFeed';
+import MessageComposer from '@/components/MessageComposer';
+import {
+  Radio, LogOut, Users, MessageSquare, Plus, Trash2, UserPlus,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
+const AdminDashboard = () => {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
+  const { currentUser, logout, getUsersByAdmin, createUser, deleteUser } = useAuthStore();
+  const { sendMessage, getMessagesByWorkspace } = useMessageStore();
+  const { getWorkspaceBySlug } = useWorkspaceStore();
+
+  const [activeTab, setActiveTab] = useState<'messages' | 'users'>('messages');
+  const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '' });
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
+    navigate('/');
+    return null;
+  }
+
+  const workspace = getWorkspaceBySlug(workspaceId!);
+  const messages = getMessagesByWorkspace(workspaceId!);
+  const users = getUsersByAdmin(currentUser.id);
+
+  const handleSend = (text?: string, imageUrl?: string) => {
+    sendMessage({
+      adminId: currentUser.id,
+      workspaceId: workspaceId!,
+      text,
+      imageUrl,
+    });
+    toast.success('Message broadcast sent!');
+  };
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUser({
+      ...newUser,
+      role: 'user',
+      adminId: currentUser.id,
+    });
+    setNewUser({ username: '', password: '', displayName: '' });
+    setDialogOpen(false);
+    toast.success('User created');
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="bg-card border-b border-border sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Radio className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-bold text-sm text-foreground">{workspace?.name || workspaceId}</h1>
+              <p className="text-xs text-muted-foreground">Admin Panel</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={activeTab === 'messages' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-lg"
+              onClick={() => setActiveTab('messages')}
+            >
+              <MessageSquare className="w-4 h-4 mr-1" /> Messages
+            </Button>
+            <Button
+              variant={activeTab === 'users' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-lg"
+              onClick={() => setActiveTab('users')}
+            >
+              <Users className="w-4 h-4 mr-1" /> Users ({users.length})
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { logout(); navigate('/'); }}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {activeTab === 'messages' ? (
+        <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full">
+          <MessageFeed messages={messages} isAdmin />
+          <MessageComposer onSend={handleSend} />
+        </div>
+      ) : (
+        <div className="max-w-6xl mx-auto w-full p-4">
+          <div className="bg-card rounded-2xl border border-border">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="font-semibold text-foreground">Manage Users</h2>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="rounded-xl">
+                    <UserPlus className="w-4 h-4 mr-1" /> Add User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create User</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateUser} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Display Name</Label>
+                      <Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Username</Label>
+                      <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Password</Label>
+                      <Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+                    </div>
+                    <Button type="submit" className="w-full rounded-xl">Create User</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {users.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No users yet. Add users to broadcast messages.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {users.map((user) => (
+                  <div key={user.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground text-sm">{user.displayName}</p>
+                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => { deleteUser(user.id); toast.success('User removed'); }}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;
