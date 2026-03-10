@@ -58,6 +58,12 @@ const AdminDashboard = () => {
     toast.success('Message broadcast sent!');
   };
 
+  const handleTyping = () => {
+    usePresenceStore.getState().setTyping(currentUser.id, workspaceId!);
+    // Auto-clear after 3s
+    setTimeout(() => usePresenceStore.getState().clearTyping(currentUser.id, workspaceId!), 3000);
+  };
+
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     createUser({
