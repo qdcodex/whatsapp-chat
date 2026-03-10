@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { usePresenceStore } from '@/stores/presenceStore';
 import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
+import OnlineStatus from '@/components/OnlineStatus';
 import {
   Radio, LogOut, Users, MessageSquare, Plus, Trash2, UserPlus,
 } from 'lucide-react';
