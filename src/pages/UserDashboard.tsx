@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { usePresenceStore } from '@/stores/presenceStore';
 import MessageFeed from '@/components/MessageFeed';
+import TypingIndicator from '@/components/TypingIndicator';
+import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +15,17 @@ const UserDashboard = () => {
   const { currentUser, logout } = useAuthStore();
   const { getMessagesByWorkspace } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
+  const { setOnline, isOnline: checkOnline, isTyping: checkTyping } = usePresenceStore();
+  const [, setTick] = useState(0);
+
+  // Heartbeat & refresh ticker - must be before any early return
+  useEffect(() => {
+    if (!currentUser) return;
+    setOnline(currentUser.id);
+    const heartbeat = setInterval(() => setOnline(currentUser.id), 15000);
+    const ticker = setInterval(() => setTick((t) => t + 1), 2000);
+    return () => { clearInterval(heartbeat); clearInterval(ticker); };
+  }, [currentUser, setOnline]);
 
   if (!currentUser || currentUser.role !== 'user') {
     navigate('/');
@@ -19,6 +34,8 @@ const UserDashboard = () => {
 
   const workspace = getWorkspaceByAdmin(currentUser.adminId!);
   const messages = getMessagesByWorkspace(workspace?.slug || '');
+  const adminOnline = checkOnline(currentUser.adminId!);
+  const adminTyping = checkTyping(currentUser.adminId!, workspace?.slug || '');
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,7 +47,7 @@ const UserDashboard = () => {
             </div>
             <div>
               <h1 className="font-bold text-sm text-foreground">{workspace?.name || 'Messages'}</h1>
-              <p className="text-xs text-muted-foreground">Broadcast Channel</p>
+              <OnlineStatus isOnline={adminOnline} />
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => { logout(); navigate('/'); }}>
@@ -41,6 +58,7 @@ const UserDashboard = () => {
 
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
         <MessageFeed messages={messages} />
+        {adminTyping && <TypingIndicator name="Admin" />}
       </div>
     </div>
   );

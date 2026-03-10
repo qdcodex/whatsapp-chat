@@ -6,9 +6,10 @@ import Picker from '@emoji-mart/react';
 
 interface MessageComposerProps {
   onSend: (text?: string, imageUrl?: string) => void;
+  onTyping?: () => void;
 }
 
-const MessageComposer = ({ onSend }: MessageComposerProps) => {
+const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -174,7 +175,7 @@ const MessageComposer = ({ onSend }: MessageComposerProps) => {
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); onTyping?.(); }}
           onKeyDown={handleKeyDown}
           onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
           placeholder="Type a message..."

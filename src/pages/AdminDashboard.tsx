@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { usePresenceStore } from '@/stores/presenceStore';
 import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
+import OnlineStatus from '@/components/OnlineStatus';
 import {
   Radio, LogOut, Users, MessageSquare, Plus, Trash2, UserPlus,
 } from 'lucide-react';
@@ -23,9 +25,19 @@ const AdminDashboard = () => {
   const { sendMessage, getMessagesByWorkspace } = useMessageStore();
   const { getWorkspaceBySlug } = useWorkspaceStore();
 
+  const { setOnline, isOnline: checkOnline, getLastSeen } = usePresenceStore();
+
   const [activeTab, setActiveTab] = useState<'messages' | 'users'>('messages');
   const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Heartbeat for online presence
+  useEffect(() => {
+    if (!currentUser) return;
+    setOnline(currentUser.id);
+    const interval = setInterval(() => setOnline(currentUser.id), 15000);
+    return () => clearInterval(interval);
+  }, [currentUser, setOnline]);
 
   if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
     navigate('/');
@@ -44,6 +56,12 @@ const AdminDashboard = () => {
       imageUrl,
     });
     toast.success('Message broadcast sent!');
+  };
+
+  const handleTyping = () => {
+    usePresenceStore.getState().setTyping(currentUser.id, workspaceId!);
+    // Auto-clear after 3s
+    setTimeout(() => usePresenceStore.getState().clearTyping(currentUser.id, workspaceId!), 3000);
   };
 
   const handleCreateUser = (e: React.FormEvent) => {
@@ -69,7 +87,7 @@ const AdminDashboard = () => {
             </div>
             <div>
               <h1 className="font-bold text-sm text-foreground">{workspace?.name || workspaceId}</h1>
-              <p className="text-xs text-muted-foreground">Admin Panel</p>
+              <OnlineStatus isOnline={true} />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -99,7 +117,7 @@ const AdminDashboard = () => {
       {activeTab === 'messages' ? (
         <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full">
           <MessageFeed messages={messages} isAdmin />
-          <MessageComposer onSend={handleSend} />
+          <MessageComposer onSend={handleSend} onTyping={handleTyping} />
         </div>
       ) : (
         <div className="max-w-6xl mx-auto w-full p-4">
@@ -145,13 +163,16 @@ const AdminDashboard = () => {
                 {users.map((user) => (
                   <div key={user.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                        {user.displayName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{user.displayName}</p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
-                      </div>
+                       <div className="relative">
+                         <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
+                           {user.displayName.charAt(0).toUpperCase()}
+                         </div>
+                         <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${checkOnline(user.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                       </div>
+                       <div>
+                         <p className="font-medium text-foreground text-sm">{user.displayName}</p>
+                         <OnlineStatus isOnline={checkOnline(user.id)} lastSeen={getLastSeen(user.id)} size="sm" />
+                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => { deleteUser(user.id); toast.success('User removed'); }}>
                       <Trash2 className="w-4 h-4" />
