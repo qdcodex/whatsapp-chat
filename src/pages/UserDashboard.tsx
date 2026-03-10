@@ -59,6 +59,7 @@ const UserDashboard = () => {
 
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
         <MessageFeed messages={messages} />
+        {adminTyping && <TypingIndicator name="Admin" />}
       </div>
     </div>
   );
