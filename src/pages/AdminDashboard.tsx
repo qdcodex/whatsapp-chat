@@ -25,9 +25,19 @@ const AdminDashboard = () => {
   const { sendMessage, getMessagesByWorkspace } = useMessageStore();
   const { getWorkspaceBySlug } = useWorkspaceStore();
 
+  const { setOnline, isOnline: checkOnline, getLastSeen } = usePresenceStore();
+
   const [activeTab, setActiveTab] = useState<'messages' | 'users'>('messages');
   const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Heartbeat for online presence
+  useEffect(() => {
+    if (!currentUser) return;
+    setOnline(currentUser.id);
+    const interval = setInterval(() => setOnline(currentUser.id), 15000);
+    return () => clearInterval(interval);
+  }, [currentUser, setOnline]);
 
   if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
     navigate('/');
