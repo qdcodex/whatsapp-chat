@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { usePresenceStore } from '@/stores/presenceStore';
 import MessageFeed from '@/components/MessageFeed';
+import TypingIndicator from '@/components/TypingIndicator';
+import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
