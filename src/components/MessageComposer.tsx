@@ -175,7 +175,7 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); onTyping?.(); }}
           onKeyDown={handleKeyDown}
           onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
           placeholder="Type a message..."

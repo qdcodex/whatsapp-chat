@@ -15,9 +15,17 @@ const UserDashboard = () => {
   const { currentUser, logout } = useAuthStore();
   const { getMessagesByWorkspace } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
-
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping } = usePresenceStore();
   const [, setTick] = useState(0);
+
+  // Heartbeat & refresh ticker - must be before any early return
+  useEffect(() => {
+    if (!currentUser) return;
+    setOnline(currentUser.id);
+    const heartbeat = setInterval(() => setOnline(currentUser.id), 15000);
+    const ticker = setInterval(() => setTick((t) => t + 1), 2000);
+    return () => { clearInterval(heartbeat); clearInterval(ticker); };
+  }, [currentUser, setOnline]);
 
   if (!currentUser || currentUser.role !== 'user') {
     navigate('/');
@@ -28,15 +36,6 @@ const UserDashboard = () => {
   const messages = getMessagesByWorkspace(workspace?.slug || '');
   const adminOnline = checkOnline(currentUser.adminId!);
   const adminTyping = checkTyping(currentUser.adminId!, workspace?.slug || '');
-
-  // Heartbeat & refresh ticker
-  useEffect(() => {
-    if (!currentUser) return;
-    setOnline(currentUser.id);
-    const heartbeat = setInterval(() => setOnline(currentUser.id), 15000);
-    const ticker = setInterval(() => setTick((t) => t + 1), 2000);
-    return () => { clearInterval(heartbeat); clearInterval(ticker); };
-  }, [currentUser, setOnline]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
