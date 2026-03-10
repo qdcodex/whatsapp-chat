@@ -48,7 +48,7 @@ const UserDashboard = () => {
             </div>
             <div>
               <h1 className="font-bold text-sm text-foreground">{workspace?.name || 'Messages'}</h1>
-              <p className="text-xs text-muted-foreground">Broadcast Channel</p>
+              <OnlineStatus isOnline={adminOnline} />
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => { logout(); navigate('/'); }}>
