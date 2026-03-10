@@ -81,7 +81,7 @@ const AdminDashboard = () => {
             </div>
             <div>
               <h1 className="font-bold text-sm text-foreground">{workspace?.name || workspaceId}</h1>
-              <p className="text-xs text-muted-foreground">Admin Panel</p>
+              <OnlineStatus isOnline={true} />
             </div>
           </div>
           <div className="flex items-center gap-2">
