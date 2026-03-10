@@ -6,6 +6,7 @@ import Picker from '@emoji-mart/react';
 
 interface MessageComposerProps {
   onSend: (text?: string, imageUrl?: string) => void;
+  onTyping?: () => void;
 }
 
 const MessageComposer = ({ onSend }: MessageComposerProps) => {
