@@ -117,7 +117,7 @@ const AdminDashboard = () => {
       {activeTab === 'messages' ? (
         <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full">
           <MessageFeed messages={messages} isAdmin />
-          <MessageComposer onSend={handleSend} />
+          <MessageComposer onSend={handleSend} onTyping={handleTyping} />
         </div>
       ) : (
         <div className="max-w-6xl mx-auto w-full p-4">
