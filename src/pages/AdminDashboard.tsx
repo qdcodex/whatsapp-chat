@@ -157,13 +157,16 @@ const AdminDashboard = () => {
                 {users.map((user) => (
                   <div key={user.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                        {user.displayName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{user.displayName}</p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
-                      </div>
+                       <div className="relative">
+                         <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
+                           {user.displayName.charAt(0).toUpperCase()}
+                         </div>
+                         <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${checkOnline(user.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                       </div>
+                       <div>
+                         <p className="font-medium text-foreground text-sm">{user.displayName}</p>
+                         <OnlineStatus isOnline={checkOnline(user.id)} lastSeen={getLastSeen(user.id)} size="sm" />
+                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => { deleteUser(user.id); toast.success('User removed'); }}>
                       <Trash2 className="w-4 h-4" />
