@@ -9,7 +9,7 @@ interface MessageComposerProps {
   onTyping?: () => void;
 }
 
-const MessageComposer = ({ onSend }: MessageComposerProps) => {
+const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
