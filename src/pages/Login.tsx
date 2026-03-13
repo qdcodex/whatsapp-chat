@@ -27,17 +27,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Radio className="w-8 h-8 text-primary" />
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-sm sm:max-w-md">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 mb-3 sm:mb-4">
+            <Radio className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">BroadcastHub</h1>
-          <p className="text-muted-foreground mt-2">Real-time broadcast messaging</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">BroadcastHub</h1>
+          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">Real-time broadcast messaging</p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-card rounded-2xl shadow-lg border border-border p-8 space-y-5">
+        <form onSubmit={handleLogin} className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4 sm:space-y-5">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <div className="relative">
@@ -47,7 +47,7 @@ const Login = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
-                className="pl-10"
+                className="pl-10 h-11"
                 required
               />
             </div>
@@ -63,7 +63,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="pl-10"
+                className="pl-10 h-11"
                 required
               />
             </div>

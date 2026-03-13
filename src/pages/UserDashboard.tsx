@@ -18,7 +18,6 @@ const UserDashboard = () => {
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping } = usePresenceStore();
   const [, setTick] = useState(0);
 
-  // Heartbeat & refresh ticker - must be before any early return
   useEffect(() => {
     if (!currentUser) return;
     setOnline(currentUser.id);
@@ -38,25 +37,25 @@ const UserDashboard = () => {
   const adminTyping = checkTyping(currentUser.adminId!, workspace?.slug || '');
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+    <div className="h-[100dvh] flex flex-col bg-background">
+      <header className="bg-card border-b border-border sticky top-0 z-10 shrink-0">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Radio className="w-4 h-4 text-primary" />
             </div>
-            <div>
-              <h1 className="font-bold text-sm text-foreground">{workspace?.name || 'Messages'}</h1>
-              <OnlineStatus isOnline={adminOnline} />
+            <div className="min-w-0">
+              <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || 'Messages'}</h1>
+              <OnlineStatus isOnline={adminOnline} size="sm" />
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { logout(); navigate('/'); }}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { logout(); navigate('/'); }}>
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full min-h-0">
         <MessageFeed messages={messages} />
         {adminTyping && <TypingIndicator name="Admin" />}
       </div>

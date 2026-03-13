@@ -65,56 +65,58 @@ const SuperAdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Radio className="w-5 h-5 text-primary" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Radio className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">BroadcastHub</h1>
-              <p className="text-xs text-muted-foreground">Super Admin</p>
+              <h1 className="font-bold text-sm sm:text-base text-foreground">BroadcastHub</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Super Admin</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { logout(); navigate('/'); }}>
-            <LogOut className="w-4 h-4 mr-2" /> Logout
+          <Button variant="ghost" size="sm" className="h-8 text-xs sm:text-sm" onClick={() => { logout(); navigate('/'); }}>
+            <LogOut className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4 space-y-6">
+      <main className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {[
-            { label: 'Total Admins', value: admins.length, icon: Shield },
-            { label: 'Total Users', value: useAuthStore.getState().users.filter(u => u.role === 'user').length, icon: Users },
-            { label: 'Total Messages', value: messages.length, icon: MessageSquare },
+            { label: 'Admins', value: admins.length, icon: Shield },
+            { label: 'Users', value: useAuthStore.getState().users.filter(u => u.role === 'user').length, icon: Users },
+            { label: 'Messages', value: messages.length, icon: MessageSquare },
           ].map((stat) => (
-            <div key={stat.label} className="bg-card rounded-2xl border border-border p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <stat.icon className="w-6 h-6 text-primary" />
+            <div key={stat.label} className="bg-card rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <div className="text-center sm:text-left">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-[10px] sm:text-sm text-muted-foreground">{stat.label}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Admin List */}
-        <div className="bg-card rounded-2xl border border-border">
-          <div className="p-5 border-b border-border flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Admin Workspaces</h2>
+        <div className="bg-card rounded-xl sm:rounded-2xl border border-border">
+          <div className="p-3 sm:p-5 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm sm:text-lg font-semibold text-foreground">Admin Workspaces</h2>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="rounded-xl">
-                  <Plus className="w-4 h-4 mr-1" /> Add Admin
+                <Button size="sm" className="rounded-xl h-8 text-xs sm:text-sm">
+                  <Plus className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Add Admin</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Create New Admin</DialogTitle>
                 </DialogHeader>
@@ -148,7 +150,7 @@ const SuperAdminDashboard = () => {
           {admins.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Shield className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No admins yet. Create one to get started.</p>
+              <p className="text-sm">No admins yet. Create one to get started.</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -156,19 +158,19 @@ const SuperAdminDashboard = () => {
                 const ws = workspaces.find(w => w.adminId === admin.id);
                 const userCount = getUsersByAdmin(admin.id).length;
                 return (
-                  <div key={admin.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  <div key={admin.id} className="p-3 sm:p-4 flex items-center justify-between hover:bg-secondary/50 transition-colors">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold shrink-0">
                         {admin.displayName.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium text-foreground">{admin.displayName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          /admin/{admin.workspaceId} · {userCount} users
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground text-sm truncate">{admin.displayName}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                          /{admin.workspaceId} · {userCount} users
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAdmin(admin.id)}>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 shrink-0 h-8 w-8" onClick={() => handleDeleteAdmin(admin.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

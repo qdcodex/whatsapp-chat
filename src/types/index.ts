@@ -18,6 +18,8 @@ export interface Message {
   workspaceId: string;
   text?: string;
   imageUrl?: string; // base64 data URL
+  audioUrl?: string; // base64 audio data URL
+  audioDuration?: number; // duration in seconds
   timestamp: number;
 }
 

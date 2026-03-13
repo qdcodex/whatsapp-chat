@@ -122,4 +122,14 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
   }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Mobile touch improvements */
+@media (hover: none) {
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
