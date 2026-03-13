@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, MicOff } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { toast } from 'sonner';
 
 interface MessageComposerProps {
-  onSend: (text?: string, imageUrl?: string) => void;
+  onSend: (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => void;
   onTyping?: () => void;
 }
 
@@ -23,8 +24,9 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
   const attachRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recordingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  // Close popups on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setShowEmoji(false);
@@ -34,7 +36,6 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -71,18 +72,59 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
     textareaRef.current?.focus();
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      if (recordingInterval.current) clearInterval(recordingInterval.current);
-      setRecordingTime(0);
-      // In a real app, stop MediaRecorder and send the audio blob
-    } else {
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const duration = recordingTime;
+          onSend(undefined, undefined, base64, duration);
+          toast.success('Voice message sent!');
+        };
+        reader.readAsDataURL(audioBlob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+
+      mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
       recordingInterval.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    } catch {
+      toast.error('Microphone access denied');
     }
-  };
+  }, [onSend, recordingTime]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    if (recordingInterval.current) clearInterval(recordingInterval.current);
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.ondataavailable = null;
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+    if (recordingInterval.current) clearInterval(recordingInterval.current);
+    toast('Recording cancelled');
+  }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -95,25 +137,25 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
   ];
 
   return (
-    <div className="border-t border-border bg-card px-2 py-2 relative">
+    <div className="border-t border-border bg-card px-2 py-2 relative safe-area-bottom">
       {/* Emoji Picker */}
       {showEmoji && (
-        <div ref={emojiRef} className="absolute bottom-full left-2 mb-2 z-50 shadow-xl rounded-xl overflow-hidden">
-          <Picker data={data} onEmojiSelect={onEmojiSelect} theme="light" previewPosition="none" skinTonePosition="none" maxFrequentRows={2} />
+        <div ref={emojiRef} className="absolute bottom-full left-0 sm:left-2 mb-2 z-50 shadow-xl rounded-xl overflow-hidden max-w-[calc(100vw-16px)]">
+          <Picker data={data} onEmojiSelect={onEmojiSelect} theme="light" previewPosition="none" skinTonePosition="none" maxFrequentRows={2} perLine={7} />
         </div>
       )}
 
       {/* Attachment Menu */}
       {showAttach && (
-        <div ref={attachRef} className="absolute bottom-full left-12 mb-2 z-50">
+        <div ref={attachRef} className="absolute bottom-full left-2 sm:left-12 mb-2 z-50">
           <div className="bg-card border border-border rounded-2xl shadow-xl p-3 flex gap-4">
             {attachmentOptions.map((opt) => (
               <button
                 key={opt.label}
                 onClick={opt.onClick}
-                className="flex flex-col items-center gap-1.5 hover:scale-110 transition-transform"
+                className="flex flex-col items-center gap-1.5 hover:scale-110 active:scale-95 transition-transform"
               >
-                <div className={`w-12 h-12 rounded-full bg-secondary flex items-center justify-center ${opt.color}`}>
+                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-secondary flex items-center justify-center ${opt.color}`}>
                   <opt.icon className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] text-muted-foreground font-medium">{opt.label}</span>
@@ -141,68 +183,84 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
         </div>
       )}
 
-      {/* Recording indicator */}
-      {isRecording && (
-        <div className="flex items-center gap-2 mb-2 ml-1 text-destructive animate-pulse">
-          <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
-          <span className="text-sm font-medium">Recording {formatTime(recordingTime)}</span>
-        </div>
-      )}
-
-      {/* Composer row */}
-      <div className="flex items-end gap-1.5">
-        {/* Emoji button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 text-muted-foreground hover:text-primary h-10 w-10"
-          onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); }}
-        >
-          <Smile className="w-5 h-5" />
-        </Button>
-
-        {/* Attach button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 text-muted-foreground hover:text-primary h-10 w-10"
-          onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); }}
-        >
-          <Paperclip className="w-5 h-5" />
-        </Button>
-
-        {/* Text input */}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => { setText(e.target.value); onTyping?.(); }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
-          placeholder="Type a message..."
-          rows={1}
-          className="flex-1 resize-none bg-secondary rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground max-h-[120px] min-h-[40px]"
-        />
-
-        {/* Send or Mic button */}
-        {hasContent ? (
+      {/* Recording state */}
+      {isRecording ? (
+        <div className="flex items-center gap-2 py-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-muted-foreground h-10 w-10"
+            onClick={cancelRecording}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+            <span className="text-sm font-medium text-destructive">{formatTime(recordingTime)}</span>
+            <div className="flex-1 h-1 rounded-full bg-destructive/20 overflow-hidden">
+              <div className="h-full bg-destructive rounded-full animate-pulse" style={{ width: `${Math.min((recordingTime / 60) * 100, 100)}%` }} />
+            </div>
+          </div>
           <Button
             size="icon"
             className="shrink-0 rounded-full h-10 w-10"
-            onClick={handleSend}
+            onClick={stopRecording}
           >
             <Send className="w-4 h-4" />
           </Button>
-        ) : (
+        </div>
+      ) : (
+        /* Normal composer row */
+        <div className="flex items-end gap-1">
           <Button
-            variant={isRecording ? 'destructive' : 'ghost'}
+            variant="ghost"
             size="icon"
-            className={`shrink-0 rounded-full h-10 w-10 ${isRecording ? '' : 'text-muted-foreground hover:text-primary'}`}
-            onClick={toggleRecording}
+            className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 sm:h-10 sm:w-10"
+            onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); }}
           >
-            {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            <Smile className="w-5 h-5" />
           </Button>
-        )}
-      </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 sm:h-10 sm:w-10"
+            onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); }}
+          >
+            <Paperclip className="w-5 h-5" />
+          </Button>
+
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => { setText(e.target.value); onTyping?.(); }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
+            placeholder="Type a message..."
+            rows={1}
+            className="flex-1 resize-none bg-secondary rounded-2xl px-3 sm:px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground max-h-[120px] min-h-[40px]"
+          />
+
+          {hasContent ? (
+            <Button
+              size="icon"
+              className="shrink-0 rounded-full h-9 w-9 sm:h-10 sm:w-10"
+              onClick={handleSend}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary"
+              onClick={startRecording}
+            >
+              <Mic className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
