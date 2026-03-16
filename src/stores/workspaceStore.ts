@@ -8,6 +8,7 @@ interface WorkspaceState {
   getWorkspaceBySlug: (slug: string) => Workspace | undefined;
   getWorkspaceByAdmin: (adminId: string) => Workspace | undefined;
   deleteWorkspace: (id: string) => void;
+  toggleGlobalChat: (workspaceId: string) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -22,22 +23,24 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ...data,
           id: generateId(),
           createdAt: Date.now(),
+          globalChatEnabled: false,
         };
         set((state) => ({ workspaces: [...state.workspaces, ws] }));
         return ws;
       },
 
-      getWorkspaceBySlug: (slug) => {
-        return get().workspaces.find((w) => w.slug === slug);
-      },
-
-      getWorkspaceByAdmin: (adminId) => {
-        return get().workspaces.find((w) => w.adminId === adminId);
-      },
+      getWorkspaceBySlug: (slug) => get().workspaces.find((w) => w.slug === slug),
+      getWorkspaceByAdmin: (adminId) => get().workspaces.find((w) => w.adminId === adminId),
 
       deleteWorkspace: (id) => {
+        set((state) => ({ workspaces: state.workspaces.filter((w) => w.id !== id) }));
+      },
+
+      toggleGlobalChat: (slug) => {
         set((state) => ({
-          workspaces: state.workspaces.filter((w) => w.id !== id),
+          workspaces: state.workspaces.map((w) =>
+            w.slug === slug ? { ...w, globalChatEnabled: !w.globalChatEnabled } : w
+          ),
         }));
       },
     }),

@@ -9,6 +9,7 @@ interface AuthState {
   logout: () => void;
   createUser: (data: Omit<User, 'id' | 'createdAt'>) => User;
   deleteUser: (id: string) => void;
+  toggleUserChat: (userId: string) => void;
   getUsersByAdmin: (adminId: string) => User[];
   getAdmins: () => User[];
 }
@@ -59,6 +60,16 @@ export const useAuthStore = create<AuthState>()(
       deleteUser: (id) => {
         set((state) => ({
           users: state.users.filter((u) => u.id !== id),
+        }));
+      },
+
+      toggleUserChat: (userId) => {
+        set((state) => ({
+          users: state.users.map((u) =>
+            u.id === userId
+              ? { ...u, chatEnabled: u.chatEnabled === undefined ? true : u.chatEnabled === true ? false : true }
+              : u
+          ),
         }));
       },
 
