@@ -11,7 +11,17 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const login = useAuthStore((s) => s.login);
+  const currentUser = useAuthStore((s) => s.currentUser);
   const navigate = useNavigate();
+
+  // Auto-redirect if already logged in (WhatsApp-like persistent session)
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'superadmin') navigate('/superadmin', { replace: true });
+      else if (currentUser.role === 'admin') navigate(`/admin/${currentUser.workspaceId}`, { replace: true });
+      else navigate(`/workspace/${currentUser.adminId}`, { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +31,9 @@ const Login = () => {
       return;
     }
     toast.success(`Welcome back, ${user.displayName}!`);
-    if (user.role === 'superadmin') navigate('/superadmin');
-    else if (user.role === 'admin') navigate(`/admin/${user.workspaceId}`);
-    else navigate(`/workspace/${user.adminId}`);
+    if (user.role === 'superadmin') navigate('/superadmin', { replace: true });
+    else if (user.role === 'admin') navigate(`/admin/${user.workspaceId}`, { replace: true });
+    else navigate(`/workspace/${user.adminId}`, { replace: true });
   };
 
   return (
