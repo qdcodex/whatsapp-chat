@@ -5,10 +5,11 @@ import { MessageSquare } from 'lucide-react';
 
 interface MessageFeedProps {
   messages: Message[];
+  currentUserId?: string;
   isAdmin?: boolean;
 }
 
-const MessageFeed = ({ messages, isAdmin = false }: MessageFeedProps) => {
+const MessageFeed = ({ messages, currentUserId, isAdmin = false }: MessageFeedProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ const MessageFeed = ({ messages, isAdmin = false }: MessageFeedProps) => {
         <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
         <p className="text-lg font-medium">No messages yet</p>
         <p className="text-sm mt-1">
-          {isAdmin ? 'Send your first broadcast message' : 'Messages will appear here'}
+          {isAdmin ? 'Send your first message' : 'Messages will appear here'}
         </p>
       </div>
     );
@@ -30,7 +31,11 @@ const MessageFeed = ({ messages, isAdmin = false }: MessageFeedProps) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 scrollbar-thin bg-chat-bg">
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} isOutgoing={isAdmin} />
+        <MessageBubble
+          key={msg.id}
+          message={msg}
+          isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
+        />
       ))}
       <div ref={bottomRef} />
     </div>
