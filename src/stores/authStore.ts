@@ -9,6 +9,7 @@ interface AuthState {
   logout: () => void;
   createUser: (data: Omit<User, 'id' | 'createdAt'>) => User;
   deleteUser: (id: string) => void;
+  toggleUserChat: (userId: string) => void;
   getUsersByAdmin: (adminId: string) => User[];
   getAdmins: () => User[];
 }
