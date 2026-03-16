@@ -62,6 +62,16 @@ export const useAuthStore = create<AuthState>()(
         }));
       },
 
+      toggleUserChat: (userId) => {
+        set((state) => ({
+          users: state.users.map((u) =>
+            u.id === userId
+              ? { ...u, chatEnabled: u.chatEnabled === undefined ? true : u.chatEnabled === true ? false : true }
+              : u
+          ),
+        }));
+      },
+
       getUsersByAdmin: (adminId) => {
         return get().users.filter((u) => u.role === 'user' && u.adminId === adminId);
       },
