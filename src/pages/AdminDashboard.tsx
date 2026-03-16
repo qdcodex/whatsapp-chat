@@ -37,8 +37,13 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, [currentUser, setOnline]);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, workspaceId, navigate]);
+
   if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
-    navigate('/');
     return null;
   }
 
