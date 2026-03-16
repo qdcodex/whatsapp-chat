@@ -5,6 +5,7 @@ import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import MessageFeed from '@/components/MessageFeed';
+import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut } from 'lucide-react';
@@ -13,9 +14,9 @@ import { Button } from '@/components/ui/button';
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuthStore();
-  const { getMessagesByWorkspace } = useMessageStore();
+  const { getBroadcastMessages, getDMMessages, sendMessage } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
-  const { setOnline, isOnline: checkOnline, isTyping: checkTyping } = usePresenceStore();
+  const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -37,9 +38,39 @@ const UserDashboard = () => {
   }
 
   const workspace = getWorkspaceByAdmin(currentUser.adminId!);
-  const messages = getMessagesByWorkspace(workspace?.slug || '');
+  const slug = workspace?.slug || '';
+
+  // Users see broadcast messages + their DM conversation with admin
+  const broadcastMsgs = getBroadcastMessages(slug);
+  const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
+  const allMessages = [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
+
   const adminOnline = checkOnline(currentUser.adminId!);
-  const adminTyping = checkTyping(currentUser.adminId!, workspace?.slug || '');
+  const adminTyping = checkTyping(currentUser.adminId!, slug);
+
+  // Check if chat is enabled for this user
+  const isChatEnabled = (() => {
+    if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
+    return workspace?.globalChatEnabled ?? false;
+  })();
+
+  const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
+    sendMessage({
+      adminId: currentUser.adminId!,
+      workspaceId: slug,
+      senderId: currentUser.id,
+      recipientId: currentUser.adminId!,
+      text,
+      imageUrl,
+      audioUrl,
+      audioDuration,
+    });
+  };
+
+  const handleTyping = () => {
+    setTyping(currentUser.id, slug);
+    setTimeout(() => clearTyping(currentUser.id, slug), 3000);
+  };
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
@@ -61,8 +92,11 @@ const UserDashboard = () => {
       </header>
 
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full min-h-0">
-        <MessageFeed messages={messages} />
+        <MessageFeed messages={allMessages} currentUserId={currentUser.id} />
         {adminTyping && <TypingIndicator name="Admin" />}
+        {isChatEnabled && (
+          <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+        )}
       </div>
     </div>
   );
