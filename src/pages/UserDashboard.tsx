@@ -26,8 +26,13 @@ const UserDashboard = () => {
     return () => { clearInterval(heartbeat); clearInterval(ticker); };
   }, [currentUser, setOnline]);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'user') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   if (!currentUser || currentUser.role !== 'user') {
-    navigate('/');
     return null;
   }
 
