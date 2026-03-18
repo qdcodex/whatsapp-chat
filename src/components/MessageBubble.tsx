@@ -1,13 +1,15 @@
 import { format } from 'date-fns';
 import type { Message } from '@/types';
 import AudioPlayer from './AudioPlayer';
+import ReadReceipt from './ReadReceipt';
 
 interface MessageBubbleProps {
   message: Message;
   isOutgoing?: boolean;
+  senderName?: string;
 }
 
-const MessageBubble = ({ message, isOutgoing = false }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOutgoing = false, senderName }: MessageBubbleProps) => {
   return (
     <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'} mb-3`}>
       <div
@@ -17,6 +19,9 @@ const MessageBubble = ({ message, isOutgoing = false }: MessageBubbleProps) => {
             : 'bg-chat-bubble-in rounded-bl-md'
         }`}
       >
+        {senderName && !isOutgoing && (
+          <p className="text-xs font-semibold text-primary mb-1">{senderName}</p>
+        )}
         {message.imageUrl && (
           <img
             src={message.imageUrl}
@@ -34,8 +39,9 @@ const MessageBubble = ({ message, isOutgoing = false }: MessageBubbleProps) => {
         {message.text && (
           <p className="text-sm leading-relaxed text-foreground">{message.text}</p>
         )}
-        <p className="text-[10px] mt-1 text-chat-timestamp text-right">
+        <p className="text-[10px] mt-1 text-chat-timestamp text-right flex items-center justify-end gap-0.5">
           {format(new Date(message.timestamp), 'hh:mm a')}
+          {isOutgoing && <ReadReceipt status={message.status} />}
         </p>
       </div>
     </div>

@@ -1,15 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { usePresenceStore } from '@/stores/presenceStore';
+import { useGroupStore } from '@/stores/groupStore';
 import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import OnlineStatus from '@/components/OnlineStatus';
 import TypingIndicator from '@/components/TypingIndicator';
+import GroupManager from '@/components/GroupManager';
+import JoinRequestsList from '@/components/JoinRequestsList';
 import {
-  Radio, LogOut, Users, MessageSquare, Plus, Trash2, UserPlus, ArrowLeft,
+  Radio, LogOut, Users, Plus, Trash2, UserPlus, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,16 +28,24 @@ import type { ChatView, User } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
-  const { currentUser, logout, getUsersByAdmin, createUser, deleteUser, toggleUserChat } = useAuthStore();
-  const { sendMessage, getBroadcastMessages, getDMMessages, getConversationPreview } = useMessageStore();
+  const { currentUser, logout, getUsersByAdmin, createUser, deleteUser, toggleUserChat, getMaskedPhone } = useAuthStore();
+  const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
+  const { getGroupsByWorkspace, getGroupById } = useGroupStore();
 
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
-  const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '', phone: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Request notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -49,32 +60,56 @@ const AdminDashboard = () => {
     }
   }, [currentUser, workspaceId, navigate]);
 
+  // Mark messages as read when viewing a DM
+  useEffect(() => {
+    if (!currentUser || chatView === 'broadcast') return;
+    if (typeof chatView === 'object' && chatView.type === 'dm') {
+      const msgs = getDMMessages(workspaceId!, currentUser.id, chatView.userId);
+      const unread = msgs.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
+      if (unread.length > 0) markAsRead(unread.map((m) => m.id));
+    }
+  }, [chatView, currentUser, workspaceId]);
+
   if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
     return null;
   }
 
   const workspace = getWorkspaceBySlug(workspaceId!);
   const users = getUsersByAdmin(currentUser.id);
+  const groups = getGroupsByWorkspace(workspaceId!);
 
-  const activeMessages = chatView === 'broadcast'
-    ? getBroadcastMessages(workspaceId!)
-    : getDMMessages(workspaceId!, currentUser.id, chatView.userId);
+  // Determine active messages based on chat view
+  const getActiveMessages = () => {
+    if (chatView === 'broadcast') return getBroadcastMessages(workspaceId!);
+    if (chatView.type === 'dm') return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
+    if (chatView.type === 'group') return getGroupMessages(chatView.groupId);
+    return [];
+  };
+  const activeMessages = getActiveMessages();
 
-  const activeDMUser = chatView !== 'broadcast'
+  const activeDMUser = (typeof chatView === 'object' && chatView.type === 'dm')
     ? users.find((u) => u.id === chatView.userId)
     : null;
 
+  const activeGroup = (typeof chatView === 'object' && chatView.type === 'group')
+    ? getGroupById(chatView.groupId)
+    : null;
+
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
-    sendMessage({
+    const msgBase = {
       adminId: currentUser.id,
       workspaceId: workspaceId!,
       senderId: currentUser.id,
-      recipientId: chatView !== 'broadcast' ? chatView.userId : undefined,
-      text,
-      imageUrl,
-      audioUrl,
-      audioDuration,
-    });
+    };
+
+    if (chatView === 'broadcast') {
+      sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
+    } else if (chatView.type === 'dm') {
+      sendMessage({ ...msgBase, recipientId: chatView.userId, text, imageUrl, audioUrl, audioDuration });
+    } else if (chatView.type === 'group') {
+      sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
+    }
+
     toast.success(chatView === 'broadcast' ? 'Broadcast sent!' : 'Message sent!');
   };
 
@@ -85,8 +120,8 @@ const AdminDashboard = () => {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    createUser({ ...newUser, role: 'user', adminId: currentUser.id });
-    setNewUser({ username: '', password: '', displayName: '' });
+    createUser({ ...newUser, role: 'user', adminId: currentUser.id, workspaceId: workspaceId });
+    setNewUser({ username: '', password: '', displayName: '', phone: '' });
     setDialogOpen(false);
     toast.success('User created');
   };
@@ -98,6 +133,11 @@ const AdminDashboard = () => {
 
   const openDM = (userId: string) => {
     setChatView({ type: 'dm', userId });
+    setShowSidebar(false);
+  };
+
+  const openGroup = (groupId: string) => {
+    setChatView({ type: 'group', groupId });
     setShowSidebar(false);
   };
 
@@ -121,18 +161,12 @@ const AdminDashboard = () => {
               <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
                 <DialogHeader><DialogTitle>Chat Settings</DialogTitle></DialogHeader>
                 <div className="space-y-4">
-                  {/* Global toggle */}
                   <div className="flex items-center justify-between p-3 bg-secondary rounded-xl">
                     <div>
                       <p className="font-medium text-sm">Allow User Replies</p>
                       <p className="text-xs text-muted-foreground">Global default for all users</p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleGlobalChat(workspaceId!)}
-                      className="gap-1.5"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => toggleGlobalChat(workspaceId!)} className="gap-1.5">
                       {workspace?.globalChatEnabled ? (
                         <><ToggleRight className="w-5 h-5 text-primary" /><span className="text-primary text-xs">On</span></>
                       ) : (
@@ -140,7 +174,6 @@ const AdminDashboard = () => {
                       )}
                     </Button>
                   </div>
-                  {/* Per-user toggles */}
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Per-User Override</p>
                     {users.length === 0 ? (
@@ -153,7 +186,10 @@ const AdminDashboard = () => {
                               <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-xs shrink-0">
                                 {user.displayName.charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-sm truncate">{user.displayName}</span>
+                              <div className="min-w-0">
+                                <span className="text-sm truncate block">{user.displayName}</span>
+                                {user.phone && <span className="text-[10px] text-muted-foreground">{getMaskedPhone(user.id)}</span>}
+                              </div>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => toggleUserChat(user.id)} className="gap-1 shrink-0">
                               {isUserChatEnabled(user) ? (
@@ -182,6 +218,10 @@ const AdminDashboard = () => {
                     <Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} required />
                   </div>
                   <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <Input value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+1 234 567 8900" type="tel" />
+                  </div>
+                  <div className="space-y-2">
                     <Label>Username</Label>
                     <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
                   </div>
@@ -201,6 +241,9 @@ const AdminDashboard = () => {
 
         {/* Chat list */}
         <div className="flex-1 overflow-y-auto">
+          {/* Join Requests */}
+          <JoinRequestsList workspaceId={workspaceId!} />
+
           {/* Broadcast channel */}
           <button
             onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
@@ -221,7 +264,7 @@ const AdminDashboard = () => {
           {/* User DM list */}
           {users.map((user) => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
-            const isActive = chatView !== 'broadcast' && chatView.userId === user.id;
+            const isActive = typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId === user.id;
             return (
               <button
                 key={user.id}
@@ -249,11 +292,9 @@ const AdminDashboard = () => {
                     )}
                     <p className="text-xs text-muted-foreground truncate">
                       {preview
-                        ? preview.audioUrl
-                          ? '🎤 Voice message'
-                          : preview.imageUrl
-                            ? '📷 Photo'
-                            : preview.text || ''
+                        ? preview.audioUrl ? '🎤 Voice message'
+                          : preview.imageUrl ? '📷 Photo'
+                          : preview.text || ''
                         : 'No messages yet'}
                     </p>
                   </div>
@@ -269,6 +310,9 @@ const AdminDashboard = () => {
               <p className="text-xs mt-1">Add users to start chatting</p>
             </div>
           )}
+
+          {/* Groups */}
+          <GroupManager workspaceId={workspaceId!} adminId={currentUser.id} users={users} />
         </div>
       </div>
 
@@ -308,6 +352,16 @@ const AdminDashboard = () => {
                   <OnlineStatus isOnline={checkOnline(activeDMUser.id)} lastSeen={getLastSeen(activeDMUser.id)} size="sm" />
                 </div>
               </>
+            ) : activeGroup ? (
+              <>
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-foreground truncate">{activeGroup.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members</p>
+                </div>
+              </>
             ) : null}
           </div>
           {activeDMUser && (
@@ -340,7 +394,7 @@ const AdminDashboard = () => {
         <MessageFeed messages={activeMessages} currentUserId={currentUser.id} isAdmin />
 
         {/* Typing indicator */}
-        {chatView !== 'broadcast' && checkTyping(chatView.userId, workspaceId!) && (
+        {typeof chatView === 'object' && chatView.type === 'dm' && checkTyping(chatView.userId, workspaceId!) && (
           <TypingIndicator name={activeDMUser?.displayName || 'User'} />
         )}
 

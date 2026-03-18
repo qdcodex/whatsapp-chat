@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, UserRole } from '@/types';
+import type { User } from '@/types';
 
 interface AuthState {
   currentUser: User | null;
@@ -12,11 +12,12 @@ interface AuthState {
   toggleUserChat: (userId: string) => void;
   getUsersByAdmin: (adminId: string) => User[];
   getAdmins: () => User[];
+  getUserById: (id: string) => User | undefined;
+  getMaskedPhone: (userId: string) => string;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-// Seed default super admin
 const defaultUsers: User[] = [
   {
     id: 'sa-1',
@@ -67,7 +68,7 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           users: state.users.map((u) =>
             u.id === userId
-              ? { ...u, chatEnabled: u.chatEnabled === undefined ? true : u.chatEnabled === true ? false : true }
+              ? { ...u, chatEnabled: u.chatEnabled === undefined ? true : !u.chatEnabled }
               : u
           ),
         }));
@@ -79,6 +80,16 @@ export const useAuthStore = create<AuthState>()(
 
       getAdmins: () => {
         return get().users.filter((u) => u.role === 'admin');
+      },
+
+      getUserById: (id) => get().users.find((u) => u.id === id),
+
+      getMaskedPhone: (userId) => {
+        const user = get().users.find((u) => u.id === userId);
+        if (!user?.phone) return '';
+        const phone = user.phone;
+        if (phone.length <= 4) return '****';
+        return phone.slice(0, -4) + '****';
       },
     }),
     { name: 'broadcast-auth' }
