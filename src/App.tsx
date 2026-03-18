@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
+import JoinGroup from "./pages/JoinGroup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/admin/:workspaceId" element={<AdminDashboard />} />
           <Route path="/workspace/:adminId" element={<UserDashboard />} />
+          <Route path="/join/:groupSlug" element={<JoinGroup />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
