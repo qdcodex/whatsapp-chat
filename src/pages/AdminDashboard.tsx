@@ -134,13 +134,6 @@ const AdminDashboard = () => {
     setShowSidebar(false);
   };
 
-  // Request notification permission
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
