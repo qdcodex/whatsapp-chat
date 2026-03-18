@@ -14,10 +14,17 @@ import { Button } from '@/components/ui/button';
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuthStore();
-  const { getBroadcastMessages, getDMMessages, sendMessage } = useMessageStore();
+  const { getBroadcastMessages, getDMMessages, sendMessage, markAsRead } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
   const [, setTick] = useState(0);
+
+  // Request notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -40,15 +47,17 @@ const UserDashboard = () => {
   const workspace = getWorkspaceByAdmin(currentUser.adminId!);
   const slug = workspace?.slug || '';
 
-  // Users see broadcast messages + their DM conversation with admin
   const broadcastMsgs = getBroadcastMessages(slug);
   const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
   const allMessages = [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
 
+  // Mark incoming messages as read
+  const unread = allMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
+  if (unread.length > 0) markAsRead(unread.map((m) => m.id));
+
   const adminOnline = checkOnline(currentUser.adminId!);
   const adminTyping = checkTyping(currentUser.adminId!, slug);
 
-  // Check if chat is enabled for this user
   const isChatEnabled = (() => {
     if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
     return workspace?.globalChatEnabled ?? false;
