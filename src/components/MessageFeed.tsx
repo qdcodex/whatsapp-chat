@@ -7,9 +7,11 @@ interface MessageFeedProps {
   messages: Message[];
   currentUserId?: string;
   isAdmin?: boolean;
+  isGroupChat?: boolean;
+  getSenderName?: (senderId: string) => string;
 }
 
-const MessageFeed = ({ messages, currentUserId, isAdmin = false }: MessageFeedProps) => {
+const MessageFeed = ({ messages, currentUserId, isAdmin = false, isGroupChat = false, getSenderName }: MessageFeedProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ const MessageFeed = ({ messages, currentUserId, isAdmin = false }: MessageFeedPr
           key={msg.id}
           message={msg}
           isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
+          senderName={isGroupChat && getSenderName ? getSenderName(msg.senderId) : undefined}
         />
       ))}
       <div ref={bottomRef} />

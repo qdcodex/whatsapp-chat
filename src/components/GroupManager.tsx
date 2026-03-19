@@ -18,9 +18,11 @@ interface GroupManagerProps {
   workspaceId: string;
   adminId: string;
   users: User[];
+  onGroupSelect?: (groupId: string) => void;
+  activeGroupId?: string;
 }
 
-const GroupManager = ({ workspaceId, adminId, users }: GroupManagerProps) => {
+const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
   const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
   const { getMaskedPhone } = useAuthStore();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -116,8 +118,8 @@ const GroupManager = ({ workspaceId, adminId, users }: GroupManagerProps) => {
         groups.map((group) => (
           <div key={group.id}>
             <button
-              onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
-              className="w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50"
+              onClick={() => onGroupSelect ? onGroupSelect(group.id) : setExpandedGroup(expandedGroup === group.id ? null : group.id)}
+              className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${activeGroupId === group.id ? 'bg-secondary' : ''}`}
             >
               <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-primary" />
@@ -127,6 +129,15 @@ const GroupManager = ({ workspaceId, adminId, users }: GroupManagerProps) => {
                 <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => { e.stopPropagation(); setExpandedGroup(expandedGroup === group.id ? null : group.id); }}
+                  title="Manage members"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

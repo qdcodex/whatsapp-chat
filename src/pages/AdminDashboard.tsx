@@ -28,7 +28,7 @@ import type { ChatView, User } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
-  const { currentUser, logout, getUsersByAdmin, createUser, deleteUser, toggleUserChat, getMaskedPhone } = useAuthStore();
+  const { currentUser, logout, getUsersByAdmin, createUser, deleteUser, toggleUserChat, getMaskedPhone, getUserById } = useAuthStore();
   const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
@@ -312,7 +312,13 @@ const AdminDashboard = () => {
           )}
 
           {/* Groups */}
-          <GroupManager workspaceId={workspaceId!} adminId={currentUser.id} users={users} />
+          <GroupManager
+            workspaceId={workspaceId!}
+            adminId={currentUser.id}
+            users={users}
+            onGroupSelect={openGroup}
+            activeGroupId={typeof chatView === 'object' && chatView.type === 'group' ? chatView.groupId : undefined}
+          />
         </div>
       </div>
 
@@ -391,7 +397,16 @@ const AdminDashboard = () => {
         </div>
 
         {/* Messages */}
-        <MessageFeed messages={activeMessages} currentUserId={currentUser.id} isAdmin />
+        <MessageFeed
+          messages={activeMessages}
+          currentUserId={currentUser.id}
+          isAdmin
+          isGroupChat={typeof chatView === 'object' && chatView.type === 'group'}
+          getSenderName={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.displayName || 'Unknown';
+          }}
+        />
 
         {/* Typing indicator */}
         {typeof chatView === 'object' && chatView.type === 'dm' && checkTyping(chatView.userId, workspaceId!) && (
