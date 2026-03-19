@@ -22,7 +22,7 @@ interface GroupManagerProps {
   activeGroupId?: string;
 }
 
-const GroupManager = ({ workspaceId, adminId, users }: GroupManagerProps) => {
+const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
   const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
   const { getMaskedPhone } = useAuthStore();
   const [dialogOpen, setDialogOpen] = useState(false);
