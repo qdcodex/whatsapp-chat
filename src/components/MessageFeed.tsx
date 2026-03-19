@@ -11,7 +11,7 @@ interface MessageFeedProps {
   getSenderName?: (senderId: string) => string;
 }
 
-const MessageFeed = ({ messages, currentUserId, isAdmin = false }: MessageFeedProps) => {
+const MessageFeed = ({ messages, currentUserId, isAdmin = false, isGroupChat = false, getSenderName }: MessageFeedProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
