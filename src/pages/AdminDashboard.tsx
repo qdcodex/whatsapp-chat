@@ -397,7 +397,16 @@ const AdminDashboard = () => {
         </div>
 
         {/* Messages */}
-        <MessageFeed messages={activeMessages} currentUserId={currentUser.id} isAdmin />
+        <MessageFeed
+          messages={activeMessages}
+          currentUserId={currentUser.id}
+          isAdmin
+          isGroupChat={typeof chatView === 'object' && chatView.type === 'group'}
+          getSenderName={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.displayName || 'Unknown';
+          }}
+        />
 
         {/* Typing indicator */}
         {typeof chatView === 'object' && chatView.type === 'dm' && checkTyping(chatView.userId, workspaceId!) && (
