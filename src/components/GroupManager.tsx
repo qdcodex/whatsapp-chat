@@ -133,6 +133,15 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
+                  onClick={(e) => { e.stopPropagation(); setExpandedGroup(expandedGroup === group.id ? null : group.id); }}
+                  title="Manage members"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
                   onClick={(e) => { e.stopPropagation(); copyGroupLink(group); }}
                 >
                   <Copy className="w-3.5 h-3.5" />

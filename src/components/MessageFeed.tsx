@@ -37,6 +37,7 @@ const MessageFeed = ({ messages, currentUserId, isAdmin = false, isGroupChat = f
           key={msg.id}
           message={msg}
           isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
+          senderName={isGroupChat && getSenderName ? getSenderName(msg.senderId) : undefined}
         />
       ))}
       <div ref={bottomRef} />
