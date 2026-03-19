@@ -312,7 +312,13 @@ const AdminDashboard = () => {
           )}
 
           {/* Groups */}
-          <GroupManager workspaceId={workspaceId!} adminId={currentUser.id} users={users} />
+          <GroupManager
+            workspaceId={workspaceId!}
+            adminId={currentUser.id}
+            users={users}
+            onGroupSelect={openGroup}
+            activeGroupId={typeof chatView === 'object' && chatView.type === 'group' ? chatView.groupId : undefined}
+          />
         </div>
       </div>
 
