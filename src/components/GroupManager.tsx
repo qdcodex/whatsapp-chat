@@ -18,6 +18,8 @@ interface GroupManagerProps {
   workspaceId: string;
   adminId: string;
   users: User[];
+  onGroupSelect?: (groupId: string) => void;
+  activeGroupId?: string;
 }
 
 const GroupManager = ({ workspaceId, adminId, users }: GroupManagerProps) => {
