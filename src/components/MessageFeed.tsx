@@ -7,6 +7,8 @@ interface MessageFeedProps {
   messages: Message[];
   currentUserId?: string;
   isAdmin?: boolean;
+  isGroupChat?: boolean;
+  getSenderName?: (senderId: string) => string;
 }
 
 const MessageFeed = ({ messages, currentUserId, isAdmin = false }: MessageFeedProps) => {
