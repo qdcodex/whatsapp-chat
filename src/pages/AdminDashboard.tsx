@@ -272,7 +272,6 @@ const AdminDashboard = () => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
             const dmUnread = getUnreadDMCount(workspaceId!, currentUser.id, user.id);
             const isActive = typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId === user.id;
-            const isActive = typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId === user.id;
             return (
               <button
                 key={user.id}
