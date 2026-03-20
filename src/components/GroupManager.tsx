@@ -181,7 +181,7 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                         </div>
                         <span className="text-xs">{member.displayName}</span>
                         {member.phone && (
-                          <span className="text-[10px] text-muted-foreground">{getMaskedPhone(member.id)}</span>
+                          <span className="text-[10px] text-muted-foreground">{member.phone}</span>
                         )}
                       </div>
                       <Button
