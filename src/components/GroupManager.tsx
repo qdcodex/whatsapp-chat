@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useGroupStore } from '@/stores/groupStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { useAuthStore } from '@/stores/authStore';
 import {
   Users, Plus, Trash2, Copy, Link2, UserMinus,
 } from 'lucide-react';
@@ -11,6 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import UnreadBadge from '@/components/UnreadBadge';
 import type { User, Group } from '@/types';
 
 interface GroupManagerProps {
@@ -23,6 +26,8 @@ interface GroupManagerProps {
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
   const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
+  const { getUnreadGroupCount } = useMessageStore();
+  const { currentUser } = useAuthStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
@@ -123,7 +128,10 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                 <Users className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                  <UnreadBadge count={currentUser ? getUnreadGroupCount(group.id, currentUser.id) : 0} />
+                </div>
                 <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">

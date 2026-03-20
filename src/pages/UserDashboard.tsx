@@ -12,12 +12,13 @@ import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut, Users, ArrowLeft, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
+import UnreadBadge from '@/components/UnreadBadge';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout, getUserById } = useAuthStore();
-  const { getBroadcastMessages, getDMMessages, getGroupMessages, sendMessage, markAsRead } = useMessageStore();
+  const { getBroadcastMessages, getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadBroadcastCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
   const { getUserGroups } = useGroupStore();
@@ -169,7 +170,10 @@ const UserDashboard = () => {
               <Megaphone className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="font-semibold text-sm text-foreground">Main Channel</p>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-sm text-foreground">Main Channel</p>
+                <UnreadBadge count={getUnreadBroadcastCount(slug, currentUser.id)} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Broadcasts & direct messages</p>
             </div>
           </button>
@@ -190,7 +194,10 @@ const UserDashboard = () => {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                    <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
+                  </div>
                   <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
                 </div>
               </button>

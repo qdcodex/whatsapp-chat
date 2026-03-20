@@ -13,6 +13,9 @@ interface MessageState {
   markAsDelivered: (messageIds: string[]) => void;
   markAsRead: (messageIds: string[]) => void;
   getUnreadCount: (workspaceId: string, userId: string) => number;
+  getUnreadDMCount: (workspaceId: string, currentUserId: string, otherUserId: string) => number;
+  getUnreadGroupCount: (groupId: string, currentUserId: string) => number;
+  getUnreadBroadcastCount: (workspaceId: string, currentUserId: string) => number;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -94,6 +97,32 @@ export const useMessageStore = create<MessageState>()(
       getUnreadCount: (workspaceId, userId) =>
         get().messages.filter(
           (m) => m.workspaceId === workspaceId && m.recipientId === userId && m.status !== 'read'
+        ).length,
+
+      getUnreadDMCount: (workspaceId, currentUserId, otherUserId) =>
+        get().messages.filter(
+          (m) =>
+            m.workspaceId === workspaceId &&
+            m.recipientId &&
+            !m.groupId &&
+            m.senderId === otherUserId &&
+            m.recipientId === currentUserId &&
+            m.status !== 'read'
+        ).length,
+
+      getUnreadGroupCount: (groupId, currentUserId) =>
+        get().messages.filter(
+          (m) => m.groupId === groupId && m.senderId !== currentUserId && m.status !== 'read'
+        ).length,
+
+      getUnreadBroadcastCount: (workspaceId, currentUserId) =>
+        get().messages.filter(
+          (m) =>
+            m.workspaceId === workspaceId &&
+            !m.recipientId &&
+            !m.groupId &&
+            m.senderId !== currentUserId &&
+            m.status !== 'read'
         ).length,
     }),
     { name: 'broadcast-messages' }

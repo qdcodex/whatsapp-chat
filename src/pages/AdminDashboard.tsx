@@ -12,6 +12,7 @@ import TypingIndicator from '@/components/TypingIndicator';
 import GroupManager from '@/components/GroupManager';
 import JoinRequestsList from '@/components/JoinRequestsList';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
+import UnreadBadge from '@/components/UnreadBadge';
 import {
   Radio, LogOut, Users, Plus, Trash2, UserPlus, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const { currentUser, logout, getUsersByAdmin, createUser, deleteUser, toggleUserChat, getMaskedPhone, getUserById } = useAuthStore();
-  const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead } = useMessageStore();
+  const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount, getUnreadBroadcastCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
@@ -257,7 +258,10 @@ const AdminDashboard = () => {
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-sm text-foreground">Broadcast</p>
-                <span className="text-[10px] text-muted-foreground">{users.length} users</span>
+                <div className="flex items-center gap-1.5">
+                  <UnreadBadge count={getUnreadBroadcastCount(workspaceId!, currentUser.id)} />
+                  <span className="text-[10px] text-muted-foreground">{users.length} users</span>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground truncate">Tap to send to all users</p>
             </div>
@@ -266,6 +270,7 @@ const AdminDashboard = () => {
           {/* User DM list */}
           {users.map((user) => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
+            const dmUnread = getUnreadDMCount(workspaceId!, currentUser.id, user.id);
             const isActive = typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId === user.id;
             return (
               <button
@@ -282,11 +287,14 @@ const AdminDashboard = () => {
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm text-foreground truncate">{user.displayName}</p>
-                    {preview && (
-                      <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
-                        {format(new Date(preview.timestamp), 'hh:mm a')}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <UnreadBadge count={dmUnread} />
+                      {preview && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(preview.timestamp), 'hh:mm a')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     {isUserChatEnabled(user) && (
