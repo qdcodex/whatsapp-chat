@@ -288,11 +288,14 @@ const AdminDashboard = () => {
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm text-foreground truncate">{user.displayName}</p>
-                    {preview && (
-                      <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
-                        {format(new Date(preview.timestamp), 'hh:mm a')}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <UnreadBadge count={dmUnread} />
+                      {preview && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(preview.timestamp), 'hh:mm a')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     {isUserChatEnabled(user) && (
