@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { Message } from '@/types';
 import MessageBubble from './MessageBubble';
 import { MessageSquare } from 'lucide-react';
@@ -9,9 +9,23 @@ interface MessageFeedProps {
   isAdmin?: boolean;
   isGroupChat?: boolean;
   getSenderName?: (senderId: string) => string;
+  getSenderPhone?: (senderId: string) => string;
+  showUserDetails?: boolean;
+  onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
 }
 
-const MessageFeed = ({ messages, currentUserId, isAdmin = false, isGroupChat = false, getSenderName }: MessageFeedProps) => {
+const MessageFeed = ({
+  messages,
+  currentUserId,
+  isAdmin = false,
+  isGroupChat = false,
+  getSenderName,
+  getSenderPhone,
+  showUserDetails = false,
+  onReply,
+  onForward,
+}: MessageFeedProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,6 +52,10 @@ const MessageFeed = ({ messages, currentUserId, isAdmin = false, isGroupChat = f
           message={msg}
           isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
           senderName={isGroupChat && getSenderName ? getSenderName(msg.senderId) : undefined}
+          senderPhone={isGroupChat && getSenderPhone ? getSenderPhone(msg.senderId) : undefined}
+          showUserDetails={showUserDetails}
+          onReply={onReply}
+          onForward={onForward}
         />
       ))}
       <div ref={bottomRef} />

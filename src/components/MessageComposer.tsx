@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Square } from 'lucide-react';
+import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Square, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { toast } from 'sonner';
+import type { Message } from '@/types';
 
 interface MessageComposerProps {
   onSend: (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => void;
   onTyping?: () => void;
+  replyingTo?: { message: Message; senderName: string } | null;
+  onCancelReply?: () => void;
 }
 
-const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
+const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: MessageComposerProps) => {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -42,6 +45,13 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
   }, [text]);
+
+  // Focus textarea when replying
+  useEffect(() => {
+    if (replyingTo) {
+      textareaRef.current?.focus();
+    }
+  }, [replyingTo]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -169,6 +179,22 @@ const MessageComposer = ({ onSend, onTyping }: MessageComposerProps) => {
       <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleImageSelect} />
       <input type="file" ref={cameraRef} accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
       <input type="file" ref={docRef} accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={handleImageSelect} />
+
+      {/* Reply preview */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 mb-2 mx-1 bg-secondary/50 rounded-xl px-3 py-2 border-l-2 border-primary">
+          <Reply className="w-4 h-4 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-primary">{replyingTo.senderName}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {replyingTo.message.text || (replyingTo.message.audioUrl ? '🎤 Voice message' : '📷 Photo')}
+            </p>
+          </div>
+          <button onClick={onCancelReply} className="shrink-0">
+            <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+          </button>
+        </div>
+      )}
 
       {/* Image Preview */}
       {imagePreview && (

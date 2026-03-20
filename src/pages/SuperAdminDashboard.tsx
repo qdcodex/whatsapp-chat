@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useMessageStore } from '@/stores/messageStore';
 import {
-  Radio, LogOut, Plus, Trash2, Users, MessageSquare, Shield,
+  Radio, LogOut, Plus, Trash2, Users, MessageSquare, Shield, Phone, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,12 +16,13 @@ import { toast } from 'sonner';
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser, logout, getAdmins, createUser, deleteUser, getUsersByAdmin } = useAuthStore();
+  const { currentUser, logout, getAdmins, createUser, deleteUser, getUsersByAdmin, users: allUsers } = useAuthStore();
   const { workspaces, createWorkspace, deleteWorkspace } = useWorkspaceStore();
   const { messages } = useMessageStore();
 
   const [newAdmin, setNewAdmin] = useState({ username: '', password: '', displayName: '', slug: '', workspaceName: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
 
   if (!currentUser || currentUser.role !== 'superadmin') {
     navigate('/');
@@ -29,6 +30,19 @@ const SuperAdminDashboard = () => {
   }
 
   const admins = getAdmins();
+  const allRegularUsers = allUsers.filter(u => u.role === 'user');
+  const filteredUsers = userSearch.trim()
+    ? allRegularUsers.filter(u =>
+        u.displayName.toLowerCase().includes(userSearch.toLowerCase()) ||
+        (u.phone && u.phone.includes(userSearch))
+      )
+    : allRegularUsers;
+
+  const getAdminName = (adminId?: string) => {
+    if (!adminId) return 'N/A';
+    const admin = allUsers.find(u => u.id === adminId);
+    return admin?.displayName || 'Unknown';
+  };
 
   const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +104,7 @@ const SuperAdminDashboard = () => {
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {[
             { label: 'Admins', value: admins.length, icon: Shield },
-            { label: 'Users', value: useAuthStore.getState().users.filter(u => u.role === 'user').length, icon: Users },
+            { label: 'Users', value: allRegularUsers.length, icon: Users },
             { label: 'Messages', value: messages.length, icon: MessageSquare },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4">
@@ -176,6 +190,80 @@ const SuperAdminDashboard = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* All Users List */}
+        <div className="bg-card rounded-xl sm:rounded-2xl border border-border">
+          <div className="p-3 sm:p-5 border-b border-border">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                All Users ({allRegularUsers.length})
+              </h2>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search by name or phone..."
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {filteredUsers.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">{userSearch ? 'No users match your search' : 'No users yet'}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/30">
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">User</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Phone</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Admin</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Workspace</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-xs shrink-0">
+                            {user.displayName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{user.displayName}</p>
+                            <p className="text-[10px] text-muted-foreground">@{user.username}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {user.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-sm text-foreground">{user.phone}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-foreground">{getAdminName(user.adminId)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-muted-foreground font-mono">/{user.workspaceId || '—'}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

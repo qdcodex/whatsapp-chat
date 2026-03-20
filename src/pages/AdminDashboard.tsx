@@ -13,6 +13,7 @@ import GroupManager from '@/components/GroupManager';
 import JoinRequestsList from '@/components/JoinRequestsList';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
+import ForwardDialog from '@/components/ForwardDialog';
 import {
   Radio, LogOut, Users, Plus, Trash2, UserPlus, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
@@ -42,6 +43,8 @@ const AdminDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
+  const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
 
   // Request notification permission
   useEffect(() => {
@@ -99,11 +102,19 @@ const AdminDashboard = () => {
     : null;
 
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
-    const msgBase = {
+    const msgBase: any = {
       adminId: currentUser.id,
       workspaceId: workspaceId!,
       senderId: currentUser.id,
     };
+
+    if (replyingTo) {
+      msgBase.replyTo = {
+        messageId: replyingTo.message.id,
+        text: replyingTo.message.text,
+        senderName: replyingTo.senderName,
+      };
+    }
 
     if (chatView === 'broadcast') {
       sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
@@ -113,6 +124,7 @@ const AdminDashboard = () => {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
     }
 
+    setReplyingTo(null);
     toast.success(chatView === 'broadcast' ? 'Broadcast sent!' : 'Message sent!');
   };
 
@@ -415,10 +427,20 @@ const AdminDashboard = () => {
           currentUserId={currentUser.id}
           isAdmin
           isGroupChat={typeof chatView === 'object' && chatView.type === 'group'}
+          showUserDetails
           getSenderName={(senderId) => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          getSenderPhone={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.phone || '';
+          }}
+          onReply={(msg) => {
+            const u = getUserById(msg.senderId);
+            setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+          }}
+          onForward={(msg) => setForwardMsg(msg)}
         />
 
         {/* Typing indicator */}
@@ -427,11 +449,25 @@ const AdminDashboard = () => {
         )}
 
         {/* Composer */}
-        <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+        <MessageComposer
+          onSend={handleSend}
+          onTyping={handleTyping}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+        />
 
         {activeGroup && (
           <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
         )}
+
+        <ForwardDialog
+          message={forwardMsg}
+          open={!!forwardMsg}
+          onOpenChange={(open) => !open && setForwardMsg(null)}
+          workspaceId={workspaceId!}
+          currentUserId={currentUser.id}
+          adminId={currentUser.id}
+        />
       </div>
     </div>
   );

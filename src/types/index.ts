@@ -29,6 +29,15 @@ export interface Message {
   audioDuration?: number;
   timestamp: number;
   status: MessageStatus;
+  replyTo?: {
+    messageId: string;
+    text?: string;
+    senderName: string;
+  };
+  forwardedFrom?: {
+    senderName: string;
+    originalTimestamp: number;
+  };
 }
 
 export interface Group {

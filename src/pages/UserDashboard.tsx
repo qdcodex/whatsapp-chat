@@ -25,6 +25,7 @@ const UserDashboard = () => {
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -82,6 +83,14 @@ const UserDashboard = () => {
   })();
 
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
+    const replyData = replyingTo ? {
+      replyTo: {
+        messageId: replyingTo.message.id,
+        text: replyingTo.message.text,
+        senderName: replyingTo.senderName,
+      },
+    } : {};
+
     if (isGroupChat && activeGroup) {
       sendMessage({
         adminId: activeGroup.adminId,
@@ -92,6 +101,7 @@ const UserDashboard = () => {
         imageUrl,
         audioUrl,
         audioDuration,
+        ...replyData,
       });
     } else {
       sendMessage({
@@ -103,8 +113,10 @@ const UserDashboard = () => {
         imageUrl,
         audioUrl,
         audioDuration,
+        ...replyData,
       });
     }
+    setReplyingTo(null);
   };
 
   const handleTyping = () => {
@@ -135,9 +147,23 @@ const UserDashboard = () => {
           </div>
         </header>
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full min-h-0">
-          <MessageFeed messages={activeMessages} currentUserId={currentUser.id} />
+          <MessageFeed
+            messages={activeMessages}
+            currentUserId={currentUser.id}
+            onReply={(msg) => {
+              const u = getUserById(msg.senderId);
+              setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+            }}
+          />
           {adminTyping && <TypingIndicator name="Admin" />}
-          {isChatEnabled && <MessageComposer onSend={handleSend} onTyping={handleTyping} />}
+          {isChatEnabled && (
+            <MessageComposer
+              onSend={handleSend}
+              onTyping={handleTyping}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+            />
+          )}
         </div>
       </div>
     );
@@ -253,10 +279,19 @@ const UserDashboard = () => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          onReply={(msg) => {
+            const u = getUserById(msg.senderId);
+            setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+          }}
         />
         {chatView === 'broadcast' && adminTyping && <TypingIndicator name="Admin" />}
         {(chatView === 'broadcast' ? isChatEnabled : true) && (
-          <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+          <MessageComposer
+            onSend={handleSend}
+            onTyping={handleTyping}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+          />
         )}
 
         {activeGroup && (
