@@ -194,7 +194,10 @@ const UserDashboard = () => {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                    <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
+                  </div>
                   <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
                 </div>
               </button>
