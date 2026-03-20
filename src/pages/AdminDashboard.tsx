@@ -13,6 +13,7 @@ import GroupManager from '@/components/GroupManager';
 import JoinRequestsList from '@/components/JoinRequestsList';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
+import ForwardDialog from '@/components/ForwardDialog';
 import {
   Radio, LogOut, Users, Plus, Trash2, UserPlus, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
