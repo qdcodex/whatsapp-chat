@@ -427,10 +427,20 @@ const AdminDashboard = () => {
           currentUserId={currentUser.id}
           isAdmin
           isGroupChat={typeof chatView === 'object' && chatView.type === 'group'}
+          showUserDetails
           getSenderName={(senderId) => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          getSenderPhone={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.phone || '';
+          }}
+          onReply={(msg) => {
+            const u = getUserById(msg.senderId);
+            setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+          }}
+          onForward={(msg) => setForwardMsg(msg)}
         />
 
         {/* Typing indicator */}
@@ -439,11 +449,25 @@ const AdminDashboard = () => {
         )}
 
         {/* Composer */}
-        <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+        <MessageComposer
+          onSend={handleSend}
+          onTyping={handleTyping}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+        />
 
         {activeGroup && (
           <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
         )}
+
+        <ForwardDialog
+          message={forwardMsg}
+          open={!!forwardMsg}
+          onOpenChange={(open) => !open && setForwardMsg(null)}
+          workspaceId={workspaceId!}
+          currentUserId={currentUser.id}
+          adminId={currentUser.id}
+        />
       </div>
     </div>
   );
