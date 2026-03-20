@@ -43,6 +43,8 @@ const AdminDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
+  const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
 
   // Request notification permission
   useEffect(() => {
