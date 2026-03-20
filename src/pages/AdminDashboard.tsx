@@ -361,15 +361,18 @@ const AdminDashboard = () => {
                 </div>
               </>
             ) : activeGroup ? (
-              <>
+              <button
+                onClick={() => setGroupInfoOpen(true)}
+                className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 text-left">
                   <p className="font-semibold text-sm text-foreground truncate">{activeGroup.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members</p>
+                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members · tap for info</p>
                 </div>
-              </>
+              </button>
             ) : null}
           </div>
           {activeDMUser && (
