@@ -147,9 +147,23 @@ const UserDashboard = () => {
           </div>
         </header>
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full min-h-0">
-          <MessageFeed messages={activeMessages} currentUserId={currentUser.id} />
+          <MessageFeed
+            messages={activeMessages}
+            currentUserId={currentUser.id}
+            onReply={(msg) => {
+              const u = getUserById(msg.senderId);
+              setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+            }}
+          />
           {adminTyping && <TypingIndicator name="Admin" />}
-          {isChatEnabled && <MessageComposer onSend={handleSend} onTyping={handleTyping} />}
+          {isChatEnabled && (
+            <MessageComposer
+              onSend={handleSend}
+              onTyping={handleTyping}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+            />
+          )}
         </div>
       </div>
     );
