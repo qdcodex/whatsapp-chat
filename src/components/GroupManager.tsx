@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useGroupStore } from '@/stores/groupStore';
-import { useAuthStore } from '@/stores/authStore';
 import {
   Users, Plus, Trash2, Copy, Link2, UserMinus,
 } from 'lucide-react';
@@ -24,7 +23,6 @@ interface GroupManagerProps {
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
   const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
-  const { getMaskedPhone } = useAuthStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
@@ -97,7 +95,7 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                         />
                         <span className="text-sm">{user.displayName}</span>
                         {user.phone && (
-                          <span className="text-xs text-muted-foreground ml-auto">{getMaskedPhone(user.id)}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{user.phone}</span>
                         )}
                       </label>
                     ))
@@ -181,7 +179,7 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                         </div>
                         <span className="text-xs">{member.displayName}</span>
                         {member.phone && (
-                          <span className="text-[10px] text-muted-foreground">{getMaskedPhone(member.id)}</span>
+                          <span className="text-[10px] text-muted-foreground">{member.phone}</span>
                         )}
                       </div>
                       <Button
