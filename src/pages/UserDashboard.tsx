@@ -12,6 +12,7 @@ import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut, Users, ArrowLeft, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
+import UnreadBadge from '@/components/UnreadBadge';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
