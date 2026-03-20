@@ -11,6 +11,7 @@ import OnlineStatus from '@/components/OnlineStatus';
 import TypingIndicator from '@/components/TypingIndicator';
 import GroupManager from '@/components/GroupManager';
 import JoinRequestsList from '@/components/JoinRequestsList';
+import GroupInfoPanel from '@/components/GroupInfoPanel';
 import {
   Radio, LogOut, Users, Plus, Trash2, UserPlus, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
