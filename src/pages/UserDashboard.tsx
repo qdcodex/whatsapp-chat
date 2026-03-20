@@ -83,6 +83,14 @@ const UserDashboard = () => {
   })();
 
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
+    const replyData = replyingTo ? {
+      replyTo: {
+        messageId: replyingTo.message.id,
+        text: replyingTo.message.text,
+        senderName: replyingTo.senderName,
+      },
+    } : {};
+
     if (isGroupChat && activeGroup) {
       sendMessage({
         adminId: activeGroup.adminId,
@@ -93,6 +101,7 @@ const UserDashboard = () => {
         imageUrl,
         audioUrl,
         audioDuration,
+        ...replyData,
       });
     } else {
       sendMessage({
@@ -104,8 +113,10 @@ const UserDashboard = () => {
         imageUrl,
         audioUrl,
         audioDuration,
+        ...replyData,
       });
     }
+    setReplyingTo(null);
   };
 
   const handleTyping = () => {
