@@ -13,6 +13,9 @@ interface MessageState {
   markAsDelivered: (messageIds: string[]) => void;
   markAsRead: (messageIds: string[]) => void;
   getUnreadCount: (workspaceId: string, userId: string) => number;
+  getUnreadDMCount: (workspaceId: string, currentUserId: string, otherUserId: string) => number;
+  getUnreadGroupCount: (groupId: string, currentUserId: string) => number;
+  getUnreadBroadcastCount: (workspaceId: string, currentUserId: string) => number;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
