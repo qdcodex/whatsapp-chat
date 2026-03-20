@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useGroupStore } from '@/stores/groupStore';
 import { useMessageStore } from '@/stores/messageStore';
-import { X, Forward, Users, User, Megaphone } from 'lucide-react';
+import { Forward, Users, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
