@@ -420,6 +420,10 @@ const AdminDashboard = () => {
 
         {/* Composer */}
         <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+
+        {activeGroup && (
+          <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
+        )}
       </div>
     </div>
   );
