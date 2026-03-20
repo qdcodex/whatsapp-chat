@@ -40,6 +40,7 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '', phone: '' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
 
   // Request notification permission
   useEffect(() => {
