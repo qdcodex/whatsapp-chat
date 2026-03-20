@@ -102,11 +102,19 @@ const AdminDashboard = () => {
     : null;
 
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
-    const msgBase = {
+    const msgBase: any = {
       adminId: currentUser.id,
       workspaceId: workspaceId!,
       senderId: currentUser.id,
     };
+
+    if (replyingTo) {
+      msgBase.replyTo = {
+        messageId: replyingTo.message.id,
+        text: replyingTo.message.text,
+        senderName: replyingTo.senderName,
+      };
+    }
 
     if (chatView === 'broadcast') {
       sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
@@ -116,6 +124,7 @@ const AdminDashboard = () => {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
     }
 
+    setReplyingTo(null);
     toast.success(chatView === 'broadcast' ? 'Broadcast sent!' : 'Message sent!');
   };
 
