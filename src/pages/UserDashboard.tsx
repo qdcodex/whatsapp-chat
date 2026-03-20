@@ -23,6 +23,7 @@ const UserDashboard = () => {
   const { getUserGroups } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
