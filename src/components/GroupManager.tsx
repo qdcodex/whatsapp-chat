@@ -97,7 +97,7 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                         />
                         <span className="text-sm">{user.displayName}</span>
                         {user.phone && (
-                          <span className="text-xs text-muted-foreground ml-auto">{getMaskedPhone(user.id)}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{user.phone}</span>
                         )}
                       </label>
                     ))
