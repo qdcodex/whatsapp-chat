@@ -25,6 +25,7 @@ const UserDashboard = () => {
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
