@@ -25,7 +25,6 @@ interface GroupManagerProps {
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
   const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
