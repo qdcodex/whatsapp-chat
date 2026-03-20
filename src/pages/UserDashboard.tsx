@@ -279,10 +279,19 @@ const UserDashboard = () => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          onReply={(msg) => {
+            const u = getUserById(msg.senderId);
+            setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
+          }}
         />
         {chatView === 'broadcast' && adminTyping && <TypingIndicator name="Admin" />}
         {(chatView === 'broadcast' ? isChatEnabled : true) && (
-          <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+          <MessageComposer
+            onSend={handleSend}
+            onTyping={handleTyping}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+          />
         )}
 
         {activeGroup && (
