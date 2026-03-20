@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import UnreadBadge from '@/components/UnreadBadge';
 import type { User, Group } from '@/types';
 
 interface GroupManagerProps {
