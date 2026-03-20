@@ -251,6 +251,10 @@ const UserDashboard = () => {
         {(chatView === 'broadcast' ? isChatEnabled : true) && (
           <MessageComposer onSend={handleSend} onTyping={handleTyping} />
         )}
+
+        {activeGroup && (
+          <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
+        )}
       </div>
     </div>
   );
