@@ -98,6 +98,32 @@ export const useMessageStore = create<MessageState>()(
         get().messages.filter(
           (m) => m.workspaceId === workspaceId && m.recipientId === userId && m.status !== 'read'
         ).length,
+
+      getUnreadDMCount: (workspaceId, currentUserId, otherUserId) =>
+        get().messages.filter(
+          (m) =>
+            m.workspaceId === workspaceId &&
+            m.recipientId &&
+            !m.groupId &&
+            m.senderId === otherUserId &&
+            m.recipientId === currentUserId &&
+            m.status !== 'read'
+        ).length,
+
+      getUnreadGroupCount: (groupId, currentUserId) =>
+        get().messages.filter(
+          (m) => m.groupId === groupId && m.senderId !== currentUserId && m.status !== 'read'
+        ).length,
+
+      getUnreadBroadcastCount: (workspaceId, currentUserId) =>
+        get().messages.filter(
+          (m) =>
+            m.workspaceId === workspaceId &&
+            !m.recipientId &&
+            !m.groupId &&
+            m.senderId !== currentUserId &&
+            m.status !== 'read'
+        ).length,
     }),
     { name: 'broadcast-messages' }
   )
