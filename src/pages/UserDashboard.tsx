@@ -11,6 +11,7 @@ import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut, Users, ArrowLeft, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import GroupInfoPanel from '@/components/GroupInfoPanel';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
@@ -22,6 +23,7 @@ const UserDashboard = () => {
   const { getUserGroups } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -220,15 +222,18 @@ const UserDashboard = () => {
                 </div>
               </>
             ) : activeGroup ? (
-              <>
+              <button
+                onClick={() => setGroupInfoOpen(true)}
+                className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 text-left">
                   <p className="font-semibold text-sm text-foreground truncate">{activeGroup.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members</p>
+                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members · tap for info</p>
                 </div>
-              </>
+              </button>
             ) : null}
           </div>
         </div>
@@ -245,6 +250,10 @@ const UserDashboard = () => {
         {chatView === 'broadcast' && adminTyping && <TypingIndicator name="Admin" />}
         {(chatView === 'broadcast' ? isChatEnabled : true) && (
           <MessageComposer onSend={handleSend} onTyping={handleTyping} />
+        )}
+
+        {activeGroup && (
+          <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
         )}
       </div>
     </div>
