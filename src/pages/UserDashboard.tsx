@@ -170,7 +170,10 @@ const UserDashboard = () => {
               <Megaphone className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="font-semibold text-sm text-foreground">Main Channel</p>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-sm text-foreground">Main Channel</p>
+                <UnreadBadge count={getUnreadBroadcastCount(slug, currentUser.id)} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Broadcasts & direct messages</p>
             </div>
           </button>
