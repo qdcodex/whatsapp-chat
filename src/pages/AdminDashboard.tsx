@@ -258,7 +258,10 @@ const AdminDashboard = () => {
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-sm text-foreground">Broadcast</p>
-                <span className="text-[10px] text-muted-foreground">{users.length} users</span>
+                <div className="flex items-center gap-1.5">
+                  <UnreadBadge count={getUnreadBroadcastCount(workspaceId!, currentUser.id)} />
+                  <span className="text-[10px] text-muted-foreground">{users.length} users</span>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground truncate">Tap to send to all users</p>
             </div>
