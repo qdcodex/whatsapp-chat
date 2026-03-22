@@ -9,6 +9,8 @@ interface GroupState {
   deleteGroup: (id: string) => void;
   addMember: (groupId: string, userId: string) => void;
   removeMember: (groupId: string, userId: string) => void;
+  toggleMemberMute: (groupId: string, userId: string) => void;
+  isMemberMuted: (groupId: string, userId: string) => boolean;
   getGroupsByWorkspace: (workspaceId: string) => Group[];
   getGroupBySlug: (slug: string) => Group | undefined;
   getGroupById: (id: string) => Group | undefined;

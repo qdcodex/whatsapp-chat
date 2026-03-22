@@ -47,6 +47,7 @@ export interface Group {
   workspaceId: string;
   adminId: string;
   memberIds: string[];
+  mutedMemberIds?: string[];
   slug: string;
   createdAt: number;
 }
