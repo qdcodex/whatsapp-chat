@@ -21,7 +21,7 @@ const UserDashboard = () => {
   const { getBroadcastMessages, getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadBroadcastCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
-  const { getUserGroups } = useGroupStore();
+  const { getUserGroups, isMemberMuted } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
