@@ -61,6 +61,20 @@ export const useGroupStore = create<GroupState>()(
         ),
       })),
 
+      toggleMemberMute: (groupId, userId) => set((s) => ({
+        groups: s.groups.map((g) => {
+          if (g.id !== groupId) return g;
+          const muted = g.mutedMemberIds || [];
+          const isMuted = muted.includes(userId);
+          return { ...g, mutedMemberIds: isMuted ? muted.filter((id) => id !== userId) : [...muted, userId] };
+        }),
+      })),
+
+      isMemberMuted: (groupId, userId) => {
+        const group = get().groups.find((g) => g.id === groupId);
+        return group?.mutedMemberIds?.includes(userId) ?? false;
+      },
+
       getGroupsByWorkspace: (workspaceId) => get().groups.filter((g) => g.workspaceId === workspaceId),
       getGroupBySlug: (slug) => get().groups.find((g) => g.slug === slug),
       getGroupById: (id) => get().groups.find((g) => g.id === id),
