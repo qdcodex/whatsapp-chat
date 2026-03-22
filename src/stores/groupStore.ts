@@ -9,6 +9,8 @@ interface GroupState {
   deleteGroup: (id: string) => void;
   addMember: (groupId: string, userId: string) => void;
   removeMember: (groupId: string, userId: string) => void;
+  toggleMemberMute: (groupId: string, userId: string) => void;
+  isMemberMuted: (groupId: string, userId: string) => boolean;
   getGroupsByWorkspace: (workspaceId: string) => Group[];
   getGroupBySlug: (slug: string) => Group | undefined;
   getGroupById: (id: string) => Group | undefined;
@@ -58,6 +60,20 @@ export const useGroupStore = create<GroupState>()(
           g.id === groupId ? { ...g, memberIds: g.memberIds.filter((id) => id !== userId) } : g
         ),
       })),
+
+      toggleMemberMute: (groupId, userId) => set((s) => ({
+        groups: s.groups.map((g) => {
+          if (g.id !== groupId) return g;
+          const muted = g.mutedMemberIds || [];
+          const isMuted = muted.includes(userId);
+          return { ...g, mutedMemberIds: isMuted ? muted.filter((id) => id !== userId) : [...muted, userId] };
+        }),
+      })),
+
+      isMemberMuted: (groupId, userId) => {
+        const group = get().groups.find((g) => g.id === groupId);
+        return group?.mutedMemberIds?.includes(userId) ?? false;
+      },
 
       getGroupsByWorkspace: (workspaceId) => get().groups.filter((g) => g.workspaceId === workspaceId),
       getGroupBySlug: (slug) => get().groups.find((g) => g.slug === slug),
