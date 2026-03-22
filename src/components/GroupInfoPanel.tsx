@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useGroupStore } from '@/stores/groupStore';
 import { usePresenceStore } from '@/stores/presenceStore';
-import { Users, X, Phone, Shield, Crown, Copy, Link2 } from 'lucide-react';
+import { Users, Phone, Crown, Copy, Link2, MessageCircleOff, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -17,9 +17,11 @@ interface GroupInfoPanelProps {
 
 const GroupInfoPanel = ({ group, open, onOpenChange }: GroupInfoPanelProps) => {
   const { currentUser, getUserById, getMaskedPhone } = useAuthStore();
+  const { toggleMemberMute, isMemberMuted } = useGroupStore();
   const { isOnline } = usePresenceStore();
 
   const isPrivileged = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
+  const isGroupAdmin = currentUser?.id === group.adminId;
 
   const copyGroupLink = () => {
     const url = `${window.location.origin}/join/${group.slug}`;
@@ -84,6 +86,7 @@ const GroupInfoPanel = ({ group, open, onOpenChange }: GroupInfoPanelProps) => {
               const online = isOnline(memberId);
               const phone = member.phone;
               const displayPhone = isPrivileged ? phone : getMaskedPhone(memberId);
+              const muted = isMemberMuted(group.id, memberId);
 
               return (
                 <div
@@ -114,6 +117,12 @@ const GroupInfoPanel = ({ group, open, onOpenChange }: GroupInfoPanelProps) => {
                           Admin
                         </span>
                       )}
+                      {muted && !isAdmin && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-full">
+                          <MessageCircleOff className="w-2.5 h-2.5" />
+                          Muted
+                        </span>
+                      )}
                     </div>
                     {displayPhone && (
                       <div className="flex items-center gap-1 mt-0.5">
@@ -122,6 +131,26 @@ const GroupInfoPanel = ({ group, open, onOpenChange }: GroupInfoPanelProps) => {
                       </div>
                     )}
                   </div>
+
+                  {/* Mute toggle for admin (not for admin themselves) */}
+                  {isGroupAdmin && !isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => {
+                        toggleMemberMute(group.id, memberId);
+                        toast.success(muted ? `${member.displayName} can now chat` : `${member.displayName} muted in group`);
+                      }}
+                      title={muted ? 'Unmute user' : 'Mute user'}
+                    >
+                      {muted ? (
+                        <MessageCircleOff className="w-4 h-4 text-destructive" />
+                      ) : (
+                        <MessageCircle className="w-4 h-4 text-primary" />
+                      )}
+                    </Button>
+                  )}
 
                   {/* Online text */}
                   <span className={`text-[10px] shrink-0 ${online ? 'text-primary' : 'text-muted-foreground'}`}>

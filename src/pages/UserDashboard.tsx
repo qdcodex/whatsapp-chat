@@ -287,13 +287,23 @@ const UserDashboard = () => {
           }}
         />
         {chatView === 'broadcast' && adminTyping && <TypingIndicator name="Admin" />}
-        {(chatView === 'broadcast' ? isChatEnabled : true) && (
+        {(() => {
+          if (chatView === 'broadcast') return isChatEnabled;
+          if (isGroupChat && activeGroup) return !isMemberMuted(activeGroup.id, currentUser.id);
+          return true;
+        })() ? (
           <MessageComposer
             onSend={handleSend}
             onTyping={handleTyping}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
           />
+        ) : (
+          <div className="px-4 py-3 text-center border-t border-border bg-card">
+            <p className="text-sm text-muted-foreground">
+              {isGroupChat ? '🔇 You are muted in this group' : '💬 Chat is disabled'}
+            </p>
+          </div>
         )}
 
         {activeGroup && (
