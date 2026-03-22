@@ -275,10 +275,12 @@ const UserDashboard = () => {
           messages={activeMessages}
           currentUserId={currentUser.id}
           isGroupChat={isGroupChat}
+          showUserDetails={isGroupChat}
           getSenderName={(senderId) => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          getSenderPhone={(senderId) => getMaskedPhone(senderId)}
           onReply={(msg) => {
             const u = getUserById(msg.senderId);
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
