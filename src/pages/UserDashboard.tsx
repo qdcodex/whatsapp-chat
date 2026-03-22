@@ -17,7 +17,7 @@ import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser, logout, getUserById } = useAuthStore();
+  const { currentUser, logout, getUserById, getMaskedPhone } = useAuthStore();
   const { getBroadcastMessages, getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadBroadcastCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
@@ -275,10 +275,12 @@ const UserDashboard = () => {
           messages={activeMessages}
           currentUserId={currentUser.id}
           isGroupChat={isGroupChat}
+          showUserDetails={isGroupChat}
           getSenderName={(senderId) => {
             const u = getUserById(senderId);
             return u?.displayName || 'Unknown';
           }}
+          getSenderPhone={(senderId) => getMaskedPhone(senderId)}
           onReply={(msg) => {
             const u = getUserById(msg.senderId);
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
