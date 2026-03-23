@@ -99,6 +99,15 @@ const MessageBubble = ({
           </div>
         )}
 
+        {/* Channel label (broadcast/group origin) */}
+        {channelLabel && !isOutgoing && (
+          <div className="mb-1">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+              {channelLabel}
+            </span>
+          </div>
+        )}
+
         {/* Sender name + phone for admin/superadmin */}
         {senderName && !isOutgoing && (
           <div className="mb-1">
