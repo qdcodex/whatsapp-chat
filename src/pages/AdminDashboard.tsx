@@ -139,7 +139,25 @@ const AdminDashboard = () => {
     return workspace?.globalChatEnabled ?? false;
   };
 
-  const openDM = (userId: string) => {
+  const handleCreateUser = () => {
+    if (!newUser.displayName || !newUser.username || !newUser.password) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    createUser({
+      username: newUser.username,
+      password: newUser.password,
+      displayName: newUser.displayName,
+      phone: newUser.phone || undefined,
+      role: 'user',
+      adminId: currentUser.id,
+      workspaceId: workspaceId!,
+    });
+    setNewUser({ displayName: '', username: '', password: '', phone: '' });
+    setDialogOpen(false);
+    toast.success('User created!');
+  };
+
     setChatView({ type: 'dm', userId });
     setShowSidebar(false);
   };
