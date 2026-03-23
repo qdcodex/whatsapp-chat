@@ -25,12 +25,23 @@ interface GroupManagerProps {
 }
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
-  const { deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
+  const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup } = useGroupStore();
   const { getUnreadGroupCount } = useMessageStore();
   const { currentUser } = useAuthStore();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [groupDesc, setGroupDesc] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const groups = getGroupsByWorkspace(workspaceId);
+
+  const handleCreate = () => {
+    if (!groupName.trim()) { toast.error('Group name required'); return; }
+    createGroup({ name: groupName.trim(), description: groupDesc.trim(), workspaceId, adminId, memberIds: selectedUsers });
+    setGroupName(''); setGroupDesc(''); setSelectedUsers([]); setCreateOpen(false);
+    toast.success('Group created!');
+  };
 
   const copyGroupLink = (group: Group) => {
     const url = `${window.location.origin}/join/${group.slug}`;
