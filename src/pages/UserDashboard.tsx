@@ -150,6 +150,16 @@ const UserDashboard = () => {
           <MessageFeed
             messages={activeMessages}
             currentUserId={currentUser.id}
+            getSenderName={(senderId) => {
+              const u = getUserById(senderId);
+              return u?.displayName || 'Admin';
+            }}
+            getChannelLabel={(msg) => {
+              if (msg.senderId === currentUser.id) return undefined;
+              if (!msg.recipientId && !msg.groupId) return '📢 Broadcast';
+              if (msg.recipientId) return '💬 Direct Message';
+              return undefined;
+            }}
             onReply={(msg) => {
               const u = getUserById(msg.senderId);
               setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
