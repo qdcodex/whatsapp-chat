@@ -15,7 +15,7 @@ import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ForwardDialog from '@/components/ForwardDialog';
 import {
-  Radio, LogOut, Users, Trash2, ArrowLeft,
+  Radio, LogOut, Users, Trash2, ArrowLeft, UserPlus,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
