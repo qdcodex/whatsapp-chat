@@ -3,15 +3,9 @@ import { useGroupStore } from '@/stores/groupStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useAuthStore } from '@/stores/authStore';
 import {
-  Users, Plus, Trash2, Copy, Link2, UserMinus,
+  Users, Trash2, Copy, Link2, UserMinus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import UnreadBadge from '@/components/UnreadBadge';
 import type { User, Group } from '@/types';
