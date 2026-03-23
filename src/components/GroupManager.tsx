@@ -19,13 +19,10 @@ interface GroupManagerProps {
 }
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
-  const { createGroup, deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
+  const { deleteGroup, getGroupsByWorkspace, removeMember } = useGroupStore();
   const { getUnreadGroupCount } = useMessageStore();
   const { currentUser } = useAuthStore();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [groupDesc, setGroupDesc] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   const groups = getGroupsByWorkspace(workspaceId);

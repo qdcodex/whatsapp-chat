@@ -39,8 +39,7 @@ const AdminDashboard = () => {
 
   const [chatView, setChatView] = useState<ChatView>('broadcast');
   const [showSidebar, setShowSidebar] = useState(true);
-  const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '', phone: '' });
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
