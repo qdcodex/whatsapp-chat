@@ -157,7 +157,7 @@ const AdminDashboard = () => {
     setDialogOpen(false);
     toast.success('User created!');
   };
-
+  const openDM = (userId: string) => {
     setChatView({ type: 'dm', userId });
     setShowSidebar(false);
   };
