@@ -199,21 +199,42 @@ const UserDashboard = () => {
 
         <div className="flex-1 overflow-y-auto">
           {/* Main channel (broadcast + DM) */}
-          <button
-            onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
-            className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
-          >
-            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Megaphone className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-sm text-foreground">Main Channel</p>
-                <UnreadBadge count={getUnreadBroadcastCount(slug, currentUser.id)} />
-              </div>
-              <p className="text-xs text-muted-foreground truncate">Broadcasts & direct messages</p>
-            </div>
-          </button>
+          {(() => {
+            const broadcastMsgs = getBroadcastMessages(slug);
+            const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
+            const allMainMsgs = [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
+            const lastMainMsg = allMainMsgs[allMainMsgs.length - 1];
+            return (
+              <button
+                onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
+              >
+                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Megaphone className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm text-foreground">Main Channel</p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <UnreadBadge count={getUnreadBroadcastCount(slug, currentUser.id)} />
+                      {lastMainMsg && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(lastMainMsg.timestamp), 'hh:mm a')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {lastMainMsg
+                      ? lastMainMsg.audioUrl ? '🎤 Voice message'
+                        : lastMainMsg.imageUrl ? '📷 Photo'
+                        : lastMainMsg.text || 'Broadcasts & direct messages'
+                      : 'Broadcasts & direct messages'}
+                  </p>
+                </div>
+              </button>
+            );
+          })()}
 
           {/* Group list */}
           <div className="px-3 py-2">
@@ -221,6 +242,9 @@ const UserDashboard = () => {
           </div>
           {groups.map((group) => {
             const isActive = typeof chatView === 'object' && chatView.type === 'group' && chatView.groupId === group.id;
+            const groupMsgs = getGroupMessages(group.id);
+            const lastMsg = groupMsgs[groupMsgs.length - 1];
+            const lastSender = lastMsg ? getUserById(lastMsg.senderId) : null;
             return (
               <button
                 key={group.id}
@@ -233,9 +257,24 @@ const UserDashboard = () => {
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
-                    <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
+                      {lastMsg && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(lastMsg.timestamp), 'hh:mm a')}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {lastMsg
+                      ? `${lastMsg.senderId === currentUser.id ? 'You' : (lastSender?.displayName || 'Unknown')}: ${
+                          lastMsg.audioUrl ? '🎤 Voice message'
+                            : lastMsg.imageUrl ? '📷 Photo'
+                            : lastMsg.text || ''
+                        }`
+                      : `${group.memberIds.length} members`}
+                  </p>
                 </div>
               </button>
             );
