@@ -53,6 +53,32 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
     <div className="border-t border-border">
       <div className="flex items-center justify-between px-3 py-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Groups</p>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6"><Plus className="w-3.5 h-3.5" /></Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
+            <DialogHeader><DialogTitle>Create Group</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Group Name *</Label><Input value={groupName} onChange={(e) => setGroupName(e.target.value)} /></div>
+              <div><Label>Description</Label><Input value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} /></div>
+              {users.length > 0 && (
+                <div>
+                  <Label>Members</Label>
+                  <div className="space-y-1 max-h-40 overflow-y-auto mt-1">
+                    {users.map((u) => (
+                      <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-secondary/50 cursor-pointer">
+                        <Checkbox checked={selectedUsers.includes(u.id)} onCheckedChange={(c) => setSelectedUsers(c ? [...selectedUsers, u.id] : selectedUsers.filter((id) => id !== u.id))} />
+                        <span className="text-sm">{u.displayName}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Button onClick={handleCreate} className="w-full">Create Group</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {groups.length === 0 ? (
