@@ -22,6 +22,7 @@ const MessageBubble = ({
   senderName,
   senderPhone,
   showUserDetails = false,
+  channelLabel,
   onReply,
   onForward,
 }: MessageBubbleProps) => {
