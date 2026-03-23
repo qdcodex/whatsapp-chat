@@ -69,48 +69,6 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
     <div className="border-t border-border">
       <div className="flex items-center justify-between px-3 py-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Groups</p>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <Plus className="w-4 h-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
-            <DialogHeader><DialogTitle>Create Group</DialogTitle></DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Group Name</Label>
-                <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g. Marketing Team" required />
-              </div>
-              <div className="space-y-2">
-                <Label>Description (optional)</Label>
-                <Input value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} placeholder="What's this group about?" />
-              </div>
-              <div className="space-y-2">
-                <Label>Add Members</Label>
-                <div className="max-h-40 overflow-y-auto space-y-1 border border-border rounded-lg p-2">
-                  {users.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-2">No users available</p>
-                  ) : (
-                    users.map((user) => (
-                      <label key={user.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-secondary/50 cursor-pointer">
-                        <Checkbox
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={() => toggleUser(user.id)}
-                        />
-                        <span className="text-sm">{user.displayName}</span>
-                        {user.phone && (
-                          <span className="text-xs text-muted-foreground ml-auto">{user.phone}</span>
-                        )}
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-              <Button type="submit" className="w-full rounded-xl">Create Group</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {groups.length === 0 ? (

@@ -221,33 +221,6 @@ const AdminDashboard = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8"><UserPlus className="w-4 h-4" /></Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
-                <DialogHeader><DialogTitle>Create User</DialogTitle></DialogHeader>
-                <form onSubmit={handleCreateUser} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Display Name</Label>
-                    <Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phone Number</Label>
-                    <Input value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+1 234 567 8900" type="tel" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Username</Label>
-                    <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Password</Label>
-                    <Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
-                  </div>
-                  <Button type="submit" className="w-full rounded-xl">Create User</Button>
-                </form>
-              </DialogContent>
-            </Dialog>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { logout(); navigate('/'); }}>
               <LogOut className="w-4 h-4" />
             </Button>
