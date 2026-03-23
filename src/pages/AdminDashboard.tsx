@@ -180,6 +180,21 @@ const AdminDashboard = () => {
             <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-1">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8"><UserPlus className="w-4 h-4" /></Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
+                <DialogHeader><DialogTitle>Create User</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Display Name *</Label><Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} /></div>
+                  <div><Label>Username *</Label><Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} /></div>
+                  <div><Label>Password *</Label><Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} /></div>
+                  <div><Label>Phone</Label><Input value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+1 555 000 0000" /></div>
+                  <Button onClick={handleCreateUser} className="w-full">Create User</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="w-4 h-4" /></Button>
