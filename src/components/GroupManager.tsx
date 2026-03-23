@@ -23,37 +23,13 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
   const { getUnreadGroupCount } = useMessageStore();
   const { currentUser } = useAuthStore();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   const groups = getGroupsByWorkspace(workspaceId);
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!groupName.trim()) return;
-    createGroup({
-      name: groupName,
-      description: groupDesc,
-      workspaceId,
-      adminId,
-      memberIds: selectedUsers,
-    });
-    setGroupName('');
-    setGroupDesc('');
-    setSelectedUsers([]);
-    setDialogOpen(false);
-    toast.success('Group created');
-  };
 
   const copyGroupLink = (group: Group) => {
     const url = `${window.location.origin}/join/${group.slug}`;
     navigator.clipboard.writeText(url);
     toast.success('Group link copied!');
-  };
-
-  const toggleUser = (userId: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
   };
 
   return (

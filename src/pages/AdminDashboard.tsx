@@ -131,13 +131,6 @@ const AdminDashboard = () => {
     setTimeout(() => clearTyping(currentUser.id, workspaceId!), 3000);
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    createUser({ ...newUser, role: 'user', adminId: currentUser.id, workspaceId: workspaceId });
-    setNewUser({ username: '', password: '', displayName: '', phone: '' });
-    setDialogOpen(false);
-    toast.success('User created');
-  };
 
   const isUserChatEnabled = (user: User) => {
     if (user.chatEnabled !== undefined) return user.chatEnabled;
