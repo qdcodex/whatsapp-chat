@@ -23,6 +23,7 @@ const MessageFeed = ({
   isGroupChat = false,
   getSenderName,
   getSenderPhone,
+  getChannelLabel,
   showUserDetails = false,
   onReply,
   onForward,
