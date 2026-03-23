@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   senderName?: string;
   senderPhone?: string;
   showUserDetails?: boolean;
+  channelLabel?: string;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
 }
