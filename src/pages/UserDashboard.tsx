@@ -127,58 +127,8 @@ const UserDashboard = () => {
 
   const hasGroups = groups.length > 0;
 
-  // If user has no groups, show the simple single-view layout
-  if (!hasGroups) {
-    return (
-      <div className="h-[100dvh] flex flex-col bg-background">
-        <header className="bg-card border-b border-border sticky top-0 z-10 shrink-0">
-          <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Radio className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || 'Messages'}</h1>
-                <OnlineStatus isOnline={adminOnline} size="sm" />
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { logout(); navigate('/'); }}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </header>
-        <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full min-h-0">
-          <MessageFeed
-            messages={activeMessages}
-            currentUserId={currentUser.id}
-            getSenderName={(senderId) => {
-              const u = getUserById(senderId);
-              return u?.displayName || 'Admin';
-            }}
-            getChannelLabel={(msg) => {
-              if (msg.senderId === currentUser.id) return undefined;
-              if (!msg.recipientId && !msg.groupId) return '📢 Broadcast';
-              if (msg.recipientId) return '💬 Direct Message';
-              return undefined;
-            }}
-            onReply={(msg) => {
-              const u = getUserById(msg.senderId);
-              setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
-            }}
-          />
-          {adminTyping && <TypingIndicator name="Admin" />}
-          {isChatEnabled && (
-            <MessageComposer
-              onSend={handleSend}
-              onTyping={handleTyping}
-              replyingTo={replyingTo}
-              onCancelReply={() => setReplyingTo(null)}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Even without groups, show the sidebar layout for consistency
+  // (removed the simple single-view; all users get the sidebar UI)
 
   // User has groups - show sidebar layout like admin
   return (
