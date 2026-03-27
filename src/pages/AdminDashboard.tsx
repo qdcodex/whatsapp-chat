@@ -15,7 +15,7 @@ import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ForwardDialog from '@/components/ForwardDialog';
 import {
-  Radio, LogOut, Users, Trash2, ArrowLeft, UserPlus,
+  Radio, LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ import type { ChatView, User } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
-  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser } = useAuthStore();
+  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById } = useAuthStore();
   const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount, getUnreadBroadcastCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
@@ -43,8 +43,7 @@ const AdminDashboard = () => {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ displayName: '', username: '', password: '', phone: '' });
+  
 
   // Request notification permission
   useEffect(() => {
@@ -139,24 +138,7 @@ const AdminDashboard = () => {
     return workspace?.globalChatEnabled ?? false;
   };
 
-  const handleCreateUser = () => {
-    if (!newUser.displayName || !newUser.username || !newUser.password) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    createUser({
-      username: newUser.username,
-      password: newUser.password,
-      displayName: newUser.displayName,
-      phone: newUser.phone || undefined,
-      role: 'user',
-      adminId: currentUser.id,
-      workspaceId: workspaceId!,
-    });
-    setNewUser({ displayName: '', username: '', password: '', phone: '' });
-    setDialogOpen(false);
-    toast.success('User created!');
-  };
+  
   const openDM = (userId: string) => {
     setChatView({ type: 'dm', userId });
     setShowSidebar(false);
@@ -180,21 +162,7 @@ const AdminDashboard = () => {
             <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-1">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8"><UserPlus className="w-4 h-4" /></Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
-                <DialogHeader><DialogTitle>Create User</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div><Label>Display Name *</Label><Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} /></div>
-                  <div><Label>Username *</Label><Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} /></div>
-                  <div><Label>Password *</Label><Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} /></div>
-                  <div><Label>Phone</Label><Input value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+1 555 000 0000" /></div>
-                  <Button onClick={handleCreateUser} className="w-full">Create User</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="w-4 h-4" /></Button>
