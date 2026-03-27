@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGroupStore } from '@/stores/groupStore';
+import { useAuthStore } from '@/stores/authStore';
 import { Radio, Users, Send, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +10,11 @@ import { toast } from 'sonner';
 
 const JoinGroup = () => {
   const { groupSlug } = useParams<{ groupSlug: string }>();
-  const { getGroupBySlug, submitJoinRequest, getJoinRequests } = useGroupStore();
+  const navigate = useNavigate();
+  const { getGroupBySlug, addMember } = useGroupStore();
+  const { createUser } = useAuthStore();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const group = getGroupBySlug(groupSlug || '');
@@ -34,9 +36,9 @@ const JoinGroup = () => {
       <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
         <div className="text-center max-w-sm">
           <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-foreground">Request Sent!</h1>
+          <h1 className="text-xl font-bold text-foreground">You're In!</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Your request to join <span className="font-semibold text-foreground">{group.name}</span> has been submitted. The admin will review it shortly.
+            You've joined <span className="font-semibold text-foreground">{group.name}</span>. Redirecting to your dashboard...
           </p>
         </div>
       </div>
@@ -45,14 +47,39 @@ const JoinGroup = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitJoinRequest({
-      groupId: group.id,
-      name,
-      phone: phone || undefined,
-      message: message || undefined,
+    if (!name.trim()) {
+      toast.error('Please enter your name');
+      return;
+    }
+
+    // Generate a username from the name
+    const username = name.trim().toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(2, 6);
+    const password = Math.random().toString(36).substring(2, 10);
+
+    // Create the user account
+    const newUser = createUser({
+      username,
+      password,
+      displayName: name.trim(),
+      phone: phone.trim() || undefined,
+      role: 'user',
+      adminId: group.adminId,
+      workspaceId: group.workspaceId,
     });
+
+    // Add user to the group
+    addMember(group.id, newUser.id);
+
+    // Log the user in
+    useAuthStore.getState().login(username, password);
+
     setSubmitted(true);
-    toast.success('Join request submitted!');
+    toast.success(`Welcome to ${group.name}!`);
+
+    // Redirect to user dashboard after a brief delay
+    setTimeout(() => {
+      navigate(`/workspace/${group.adminId}`);
+    }, 1500);
   };
 
   return (
@@ -78,12 +105,8 @@ const JoinGroup = () => {
             <Label>Phone Number (optional)</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 234 567 8900" type="tel" />
           </div>
-          <div className="space-y-2">
-            <Label>Message (optional)</Label>
-            <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Why do you want to join?" />
-          </div>
           <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium gap-2">
-            <Send className="w-4 h-4" /> Request to Join
+            <Send className="w-4 h-4" /> Join Group
           </Button>
         </form>
       </div>
