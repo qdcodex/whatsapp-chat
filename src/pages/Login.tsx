@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { Radio, Lock, User } from 'lucide-react';
+import { Radio, Lock, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const Login = () => {
+  const [mode, setMode] = useState<'credentials' | 'phone'>('credentials');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const login = useAuthStore((s) => s.login);
+  const loginByPhone = useAuthStore((s) => s.loginByPhone);
   const currentUser = useAuthStore((s) => s.currentUser);
   const navigate = useNavigate();
 
-  // Auto-redirect if already logged in (WhatsApp-like persistent session)
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'superadmin') navigate('/superadmin', { replace: true });
@@ -25,10 +27,14 @@ const Login = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const user = login(username, password);
-    if (!user) {
-      toast.error('Invalid credentials');
-      return;
+    let user;
+    if (mode === 'phone') {
+      if (!phone.trim()) { toast.error('Please enter your phone number'); return; }
+      user = loginByPhone(phone.trim());
+      if (!user) { toast.error('No account found with this phone number'); return; }
+    } else {
+      user = login(username, password);
+      if (!user) { toast.error('Invalid credentials'); return; }
     }
     toast.success(`Welcome back, ${user.displayName}!`);
     if (user.role === 'superadmin') navigate('/superadmin', { replace: true });
@@ -47,46 +53,88 @@ const Login = () => {
           <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">Real-time broadcast messaging</p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4 sm:space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                className="pl-10 h-11"
-                required
-              />
-            </div>
+        <div className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4 sm:space-y-5">
+          {/* Toggle between login modes */}
+          <div className="flex rounded-xl bg-secondary p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setMode('credentials')}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${mode === 'credentials' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Username
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('phone')}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${mode === 'phone' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Phone Number
+            </button>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="pl-10 h-11"
-                required
-              />
-            </div>
-          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {mode === 'credentials' ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter username"
+                      className="pl-10 h-11"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="pl-10 h-11"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Enter your phone number"
+                    className="pl-10 h-11"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Use the phone number you provided when joining a group.</p>
+              </div>
+            )}
 
-          <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium">
-            Sign In
-          </Button>
+            <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium">
+              Sign In
+            </Button>
+          </form>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Default: superadmin / admin123
-          </p>
-        </form>
+          {mode === 'credentials' && (
+            <p className="text-xs text-center text-muted-foreground">
+              Default: superadmin / admin123
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
