@@ -6,6 +6,7 @@ interface AuthState {
   currentUser: User | null;
   users: User[];
   login: (username: string, password: string) => User | null;
+  loginByPhone: (phone: string) => User | null;
   logout: () => void;
   createUser: (data: Omit<User, 'id' | 'createdAt'>) => User;
   deleteUser: (id: string) => void;
@@ -38,6 +39,17 @@ export const useAuthStore = create<AuthState>()(
       login: (username, password) => {
         const user = get().users.find(
           (u) => u.username === username && u.password === password
+        );
+        if (user) {
+          set({ currentUser: user });
+          return user;
+        }
+        return null;
+      },
+
+      loginByPhone: (phone) => {
+        const user = get().users.find(
+          (u) => u.phone && u.phone === phone
         );
         if (user) {
           set({ currentUser: user });
