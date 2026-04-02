@@ -55,8 +55,9 @@ const MessageFeed = ({
           key={msg.id}
           message={msg}
           isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
-          senderName={getSenderName ? getSenderName(msg.senderId) : (isGroupChat ? undefined : undefined)}
+          senderName={getSenderName ? getSenderName(msg.senderId) : undefined}
           senderPhone={getSenderPhone ? getSenderPhone(msg.senderId) : undefined}
+          senderAvatar={getSenderAvatar ? getSenderAvatar(msg.senderId) : undefined}
           showUserDetails={showUserDetails}
           channelLabel={getChannelLabel ? getChannelLabel(msg) : undefined}
           onReply={onReply}
