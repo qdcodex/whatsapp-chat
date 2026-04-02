@@ -286,6 +286,10 @@ const UserDashboard = () => {
             return u?.displayName || 'Unknown';
           }}
           getSenderPhone={(senderId) => getMaskedPhone(senderId)}
+          getSenderAvatar={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.avatar;
+          }}
           getChannelLabel={(msg) => {
             if (msg.senderId === currentUser.id) return undefined;
             if (chatView === 'broadcast') {
