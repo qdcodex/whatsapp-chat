@@ -24,6 +24,7 @@ const MessageFeed = ({
   isGroupChat = false,
   getSenderName,
   getSenderPhone,
+  getSenderAvatar,
   getChannelLabel,
   showUserDetails = false,
   onReply,
