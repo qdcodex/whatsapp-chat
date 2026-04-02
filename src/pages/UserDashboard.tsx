@@ -57,10 +57,8 @@ const UserDashboard = () => {
   const groups = getUserGroups(currentUser.id);
 
   const getActiveMessages = () => {
-    if (chatView === 'broadcast') {
-      const broadcastMsgs = getBroadcastMessages(slug);
-      const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
-      return [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
+    if (typeof chatView === 'object' && chatView.type === 'dm') {
+      return getDMMessages(slug, currentUser.id, currentUser.adminId!);
     }
     if (typeof chatView === 'object' && chatView.type === 'group') {
       return getGroupMessages(chatView.groupId);
