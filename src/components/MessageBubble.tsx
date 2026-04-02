@@ -4,12 +4,14 @@ import type { Message } from '@/types';
 import AudioPlayer from './AudioPlayer';
 import ReadReceipt from './ReadReceipt';
 import { Reply, Forward, CornerUpRight } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface MessageBubbleProps {
   message: Message;
   isOutgoing?: boolean;
   senderName?: string;
   senderPhone?: string;
+  senderAvatar?: string;
   showUserDetails?: boolean;
   channelLabel?: string;
   onReply?: (message: Message) => void;
