@@ -157,9 +157,13 @@ const AdminDashboard = () => {
         {/* Sidebar Header */}
         <div className="h-14 px-3 flex items-center justify-between border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Radio className="w-4 h-4 text-primary" />
-            </div>
+            <ProfileAvatar
+              userId={currentUser.id}
+              displayName={currentUser.displayName}
+              avatar={currentUser.avatar}
+              size="sm"
+              editable
+            />
             <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-1">
