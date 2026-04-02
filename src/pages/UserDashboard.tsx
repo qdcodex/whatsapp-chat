@@ -67,8 +67,8 @@ const UserDashboard = () => {
   };
 
   const activeMessages = getActiveMessages();
+  const isDMChat = typeof chatView === 'object' && chatView.type === 'dm';
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
-  const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
 
   // Mark incoming messages as read
   const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
