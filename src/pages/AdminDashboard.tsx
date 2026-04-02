@@ -19,6 +19,7 @@ import {
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -156,9 +157,13 @@ const AdminDashboard = () => {
         {/* Sidebar Header */}
         <div className="h-14 px-3 flex items-center justify-between border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Radio className="w-4 h-4 text-primary" />
-            </div>
+            <ProfileAvatar
+              userId={currentUser.id}
+              displayName={currentUser.displayName}
+              avatar={currentUser.avatar}
+              size="sm"
+              editable
+            />
             <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-1">
@@ -258,10 +263,14 @@ const AdminDashboard = () => {
                 className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${isActive ? 'bg-secondary' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${checkOnline(user.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                  <ProfileAvatar
+                    userId={user.id}
+                    displayName={user.displayName}
+                    avatar={user.avatar}
+                    size="md"
+                    showOnlineStatus
+                    isOnline={checkOnline(user.id)}
+                  />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
@@ -336,12 +345,14 @@ const AdminDashboard = () => {
               </>
             ) : activeDMUser ? (
               <>
-                <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                    {activeDMUser.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card ${checkOnline(activeDMUser.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
-                </div>
+                <ProfileAvatar
+                  userId={activeDMUser.id}
+                  displayName={activeDMUser.displayName}
+                  avatar={activeDMUser.avatar}
+                  size="sm"
+                  showOnlineStatus
+                  isOnline={checkOnline(activeDMUser.id)}
+                />
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-foreground truncate">{activeDMUser.displayName}</p>
                   <OnlineStatus isOnline={checkOnline(activeDMUser.id)} lastSeen={getLastSeen(activeDMUser.id)} size="sm" />
@@ -402,6 +413,10 @@ const AdminDashboard = () => {
           getSenderPhone={(senderId) => {
             const u = getUserById(senderId);
             return u?.phone || '';
+          }}
+          getSenderAvatar={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.avatar;
           }}
           onReply={(msg) => {
             const u = getUserById(msg.senderId);

@@ -15,6 +15,8 @@ interface AuthState {
   getAdmins: () => User[];
   getUserById: (id: string) => User | undefined;
   getMaskedPhone: (userId: string) => string;
+  updateAvatar: (userId: string, avatar: string) => void;
+  updateUser: (userId: string, data: Partial<Pick<User, 'displayName' | 'avatar'>>) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -102,6 +104,20 @@ export const useAuthStore = create<AuthState>()(
         const phone = user.phone;
         if (phone.length <= 4) return '****';
         return phone.slice(0, -4) + '****';
+      },
+
+      updateAvatar: (userId, avatar) => {
+        set((state) => ({
+          users: state.users.map((u) => u.id === userId ? { ...u, avatar } : u),
+          currentUser: state.currentUser?.id === userId ? { ...state.currentUser, avatar } : state.currentUser,
+        }));
+      },
+
+      updateUser: (userId, data) => {
+        set((state) => ({
+          users: state.users.map((u) => u.id === userId ? { ...u, ...data } : u),
+          currentUser: state.currentUser?.id === userId ? { ...state.currentUser, ...data } : state.currentUser,
+        }));
       },
     }),
     { name: 'broadcast-auth' }

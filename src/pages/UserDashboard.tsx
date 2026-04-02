@@ -12,6 +12,7 @@ import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
 import { Radio, LogOut, Users, ArrowLeft, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import type { ChatView } from '@/types';
@@ -137,9 +138,13 @@ const UserDashboard = () => {
       <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-border bg-card shrink-0`}>
         <div className="h-14 px-3 flex items-center justify-between border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Radio className="w-4 h-4 text-primary" />
-            </div>
+            <ProfileAvatar
+              userId={currentUser.id}
+              displayName={currentUser.displayName}
+              avatar={currentUser.avatar}
+              size="sm"
+              editable
+            />
             <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || 'Messages'}</h1>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { logout(); navigate('/'); }}>
@@ -281,6 +286,10 @@ const UserDashboard = () => {
             return u?.displayName || 'Unknown';
           }}
           getSenderPhone={(senderId) => getMaskedPhone(senderId)}
+          getSenderAvatar={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.avatar;
+          }}
           getChannelLabel={(msg) => {
             if (msg.senderId === currentUser.id) return undefined;
             if (chatView === 'broadcast') {

@@ -10,6 +10,7 @@ interface MessageFeedProps {
   isGroupChat?: boolean;
   getSenderName?: (senderId: string) => string;
   getSenderPhone?: (senderId: string) => string;
+  getSenderAvatar?: (senderId: string) => string | undefined;
   getChannelLabel?: (message: Message) => string | undefined;
   showUserDetails?: boolean;
   onReply?: (message: Message) => void;
@@ -23,6 +24,7 @@ const MessageFeed = ({
   isGroupChat = false,
   getSenderName,
   getSenderPhone,
+  getSenderAvatar,
   getChannelLabel,
   showUserDetails = false,
   onReply,
@@ -53,8 +55,9 @@ const MessageFeed = ({
           key={msg.id}
           message={msg}
           isOutgoing={currentUserId ? msg.senderId === currentUserId : isAdmin}
-          senderName={getSenderName ? getSenderName(msg.senderId) : (isGroupChat ? undefined : undefined)}
+          senderName={getSenderName ? getSenderName(msg.senderId) : undefined}
           senderPhone={getSenderPhone ? getSenderPhone(msg.senderId) : undefined}
+          senderAvatar={getSenderAvatar ? getSenderAvatar(msg.senderId) : undefined}
           showUserDetails={showUserDetails}
           channelLabel={getChannelLabel ? getChannelLabel(msg) : undefined}
           onReply={onReply}
