@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGroupStore } from '@/stores/groupStore';
 import { useAuthStore } from '@/stores/authStore';
-import { Radio, Users, Send, CheckCircle } from 'lucide-react';
+import { Radio, Users, Send, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
+
+const OTP_CODE = '1234';
 
 const JoinGroup = () => {
   const { groupSlug } = useParams<{ groupSlug: string }>();
@@ -15,7 +18,8 @@ const JoinGroup = () => {
   const { createUser } = useAuthStore();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'form' | 'otp' | 'done'>('form');
 
   const group = getGroupBySlug(groupSlug || '');
 
@@ -31,7 +35,7 @@ const JoinGroup = () => {
     );
   }
 
-  if (submitted) {
+  if (step === 'done') {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
         <div className="text-center max-w-sm">
@@ -45,38 +49,36 @@ const JoinGroup = () => {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Please enter your name');
-      return;
-    }
+    if (!name.trim()) { toast.error('Please enter your name'); return; }
+    if (!phone.trim()) { toast.error('Please enter your phone number'); return; }
+    setStep('otp');
+    toast.success('OTP sent! (Demo: use 1234)');
+  };
 
-    // Generate a username from the name
+  const handleOtpVerify = () => {
+    if (otp !== OTP_CODE) { toast.error('Invalid OTP. Try 1234'); return; }
+
     const username = name.trim().toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(2, 6);
     const password = Math.random().toString(36).substring(2, 10);
 
-    // Create the user account
     const newUser = createUser({
       username,
       password,
       displayName: name.trim(),
-      phone: phone.trim() || undefined,
+      phone: phone.trim(),
       role: 'user',
       adminId: group.adminId,
       workspaceId: group.workspaceId,
     });
 
-    // Add user to the group
     addMember(group.id, newUser.id);
-
-    // Log the user in
     useAuthStore.getState().login(username, password);
 
-    setSubmitted(true);
+    setStep('done');
     toast.success(`Welcome to ${group.name}!`);
 
-    // Redirect to user dashboard after a brief delay
     setTimeout(() => {
       navigate(`/workspace/${group.adminId}`);
     }, 1500);
@@ -96,19 +98,47 @@ const JoinGroup = () => {
           <p className="text-xs text-muted-foreground mt-2">{group.memberIds.length} members</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4">
-          <div className="space-y-2">
-            <Label>Your Name *</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" required />
-          </div>
-          <div className="space-y-2">
-            <Label>Phone Number (optional)</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 234 567 8900" type="tel" />
-          </div>
-          <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium gap-2">
-            <Send className="w-4 h-4" /> Join Group
-          </Button>
-        </form>
+        <div className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4">
+          {step === 'form' ? (
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Your Name *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone Number *</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 234 567 8900" type="tel" required />
+              </div>
+              <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium gap-2">
+                <Send className="w-4 h-4" /> Join Group
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <button onClick={() => { setStep('form'); setOtp(''); }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-3.5 h-3.5" /> Back
+              </button>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium text-foreground">Enter verification code</p>
+                <p className="text-xs text-muted-foreground">Code sent to {phone}</p>
+              </div>
+              <div className="flex justify-center">
+                <InputOTP maxLength={4} value={otp} onChange={setOtp}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button onClick={handleOtpVerify} disabled={otp.length < 4} className="w-full rounded-xl h-11 text-base font-medium">
+                Verify & Join
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">Demo OTP: <span className="font-mono font-semibold text-foreground">1234</span></p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
