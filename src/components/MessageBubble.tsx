@@ -23,6 +23,7 @@ const MessageBubble = ({
   isOutgoing = false,
   senderName,
   senderPhone,
+  senderAvatar,
   showUserDetails = false,
   channelLabel,
   onReply,
