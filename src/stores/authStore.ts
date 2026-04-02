@@ -15,6 +15,8 @@ interface AuthState {
   getAdmins: () => User[];
   getUserById: (id: string) => User | undefined;
   getMaskedPhone: (userId: string) => string;
+  updateAvatar: (userId: string, avatar: string) => void;
+  updateUser: (userId: string, data: Partial<Pick<User, 'displayName' | 'avatar'>>) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
