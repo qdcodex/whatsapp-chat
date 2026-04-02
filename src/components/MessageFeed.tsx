@@ -10,6 +10,7 @@ interface MessageFeedProps {
   isGroupChat?: boolean;
   getSenderName?: (senderId: string) => string;
   getSenderPhone?: (senderId: string) => string;
+  getSenderAvatar?: (senderId: string) => string | undefined;
   getChannelLabel?: (message: Message) => string | undefined;
   showUserDetails?: boolean;
   onReply?: (message: Message) => void;
