@@ -353,7 +353,6 @@ const AdminDashboard = () => {
                   showOnlineStatus
                   isOnline={checkOnline(activeDMUser.id)}
                 />
-                </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-foreground truncate">{activeDMUser.displayName}</p>
                   <OnlineStatus isOnline={checkOnline(activeDMUser.id)} lastSeen={getLastSeen(activeDMUser.id)} size="sm" />
