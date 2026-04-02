@@ -415,6 +415,10 @@ const AdminDashboard = () => {
             const u = getUserById(senderId);
             return u?.phone || '';
           }}
+          getSenderAvatar={(senderId) => {
+            const u = getUserById(senderId);
+            return u?.avatar;
+          }}
           onReply={(msg) => {
             const u = getUserById(msg.senderId);
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
