@@ -105,6 +105,20 @@ export const useAuthStore = create<AuthState>()(
         if (phone.length <= 4) return '****';
         return phone.slice(0, -4) + '****';
       },
+
+      updateAvatar: (userId, avatar) => {
+        set((state) => ({
+          users: state.users.map((u) => u.id === userId ? { ...u, avatar } : u),
+          currentUser: state.currentUser?.id === userId ? { ...state.currentUser, avatar } : state.currentUser,
+        }));
+      },
+
+      updateUser: (userId, data) => {
+        set((state) => ({
+          users: state.users.map((u) => u.id === userId ? { ...u, ...data } : u),
+          currentUser: state.currentUser?.id === userId ? { ...state.currentUser, ...data } : state.currentUser,
+        }));
+      },
     }),
     { name: 'broadcast-auth' }
   )
