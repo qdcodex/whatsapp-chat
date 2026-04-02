@@ -263,10 +263,14 @@ const AdminDashboard = () => {
                 className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${isActive ? 'bg-secondary' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${checkOnline(user.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                  <ProfileAvatar
+                    userId={user.id}
+                    displayName={user.displayName}
+                    avatar={user.avatar}
+                    size="md"
+                    showOnlineStatus
+                    isOnline={checkOnline(user.id)}
+                  />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
