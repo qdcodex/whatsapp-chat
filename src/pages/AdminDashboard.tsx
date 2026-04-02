@@ -345,11 +345,14 @@ const AdminDashboard = () => {
               </>
             ) : activeDMUser ? (
               <>
-                <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                    {activeDMUser.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card ${checkOnline(activeDMUser.id) ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                <ProfileAvatar
+                  userId={activeDMUser.id}
+                  displayName={activeDMUser.displayName}
+                  avatar={activeDMUser.avatar}
+                  size="sm"
+                  showOnlineStatus
+                  isOnline={checkOnline(activeDMUser.id)}
+                />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-foreground truncate">{activeDMUser.displayName}</p>
