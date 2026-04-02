@@ -10,7 +10,7 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { Radio, LogOut, Users, ArrowLeft, Megaphone } from 'lucide-react';
+import { LogOut, Users, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
@@ -20,11 +20,11 @@ import type { ChatView } from '@/types';
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout, getUserById, getMaskedPhone } = useAuthStore();
-  const { getBroadcastMessages, getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadBroadcastCount, getUnreadGroupCount } = useMessageStore();
+  const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
   const { getUserGroups, isMemberMuted } = useGroupStore();
-  const [chatView, setChatView] = useState<ChatView>('broadcast');
+  const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
@@ -50,17 +50,28 @@ const UserDashboard = () => {
     }
   }, [currentUser, navigate]);
 
+  // Initialize chatView with admin DM once we know adminId
+  useEffect(() => {
+    if (currentUser?.adminId) {
+      setChatView((prev) => {
+        if (typeof prev === 'object' && prev.type === 'dm' && prev.userId === '') {
+          return { type: 'dm', userId: currentUser.adminId! };
+        }
+        return prev;
+      });
+    }
+  }, [currentUser?.adminId]);
+
   if (!currentUser || currentUser.role !== 'user') return null;
 
   const workspace = getWorkspaceByAdmin(currentUser.adminId!);
   const slug = workspace?.slug || '';
   const groups = getUserGroups(currentUser.id);
+  const admin = getUserById(currentUser.adminId!);
 
   const getActiveMessages = () => {
-    if (chatView === 'broadcast') {
-      const broadcastMsgs = getBroadcastMessages(slug);
-      const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
-      return [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
+    if (typeof chatView === 'object' && chatView.type === 'dm') {
+      return getDMMessages(slug, currentUser.id, currentUser.adminId!);
     }
     if (typeof chatView === 'object' && chatView.type === 'group') {
       return getGroupMessages(chatView.groupId);
@@ -69,6 +80,7 @@ const UserDashboard = () => {
   };
 
   const activeMessages = getActiveMessages();
+  const isDMChat = typeof chatView === 'object' && chatView.type === 'dm';
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
   const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
 
@@ -99,10 +111,7 @@ const UserDashboard = () => {
         workspaceId: slug,
         senderId: currentUser.id,
         groupId: activeGroup.id,
-        text,
-        imageUrl,
-        audioUrl,
-        audioDuration,
+        text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
     } else {
@@ -111,10 +120,7 @@ const UserDashboard = () => {
         workspaceId: slug,
         senderId: currentUser.id,
         recipientId: currentUser.adminId!,
-        text,
-        imageUrl,
-        audioUrl,
-        audioDuration,
+        text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
     }
@@ -126,12 +132,6 @@ const UserDashboard = () => {
     setTimeout(() => clearTyping(currentUser.id, slug), 3000);
   };
 
-  const hasGroups = groups.length > 0;
-
-  // Even without groups, show the sidebar layout for consistency
-  // (removed the simple single-view; all users get the sidebar UI)
-
-  // User has groups - show sidebar layout like admin
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
@@ -153,38 +153,42 @@ const UserDashboard = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Main channel (broadcast + DM) */}
+          {/* Admin DM */}
           {(() => {
-            const broadcastMsgs = getBroadcastMessages(slug);
             const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
-            const allMainMsgs = [...broadcastMsgs, ...dmMsgs].sort((a, b) => a.timestamp - b.timestamp);
-            const lastMainMsg = allMainMsgs[allMainMsgs.length - 1];
+            const lastMsg = dmMsgs[dmMsgs.length - 1];
+            const dmUnread = getUnreadDMCount(slug, currentUser.id, currentUser.adminId!);
             return (
               <button
-                onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
+                onClick={() => { setChatView({ type: 'dm', userId: currentUser.adminId! }); setShowSidebar(false); }}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${isDMChat ? 'bg-secondary' : ''}`}
               >
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Megaphone className="w-5 h-5 text-primary" />
-                </div>
+                <ProfileAvatar
+                  userId={currentUser.adminId!}
+                  displayName={admin?.displayName || 'Admin'}
+                  avatar={admin?.avatar}
+                  size="md"
+                  showOnlineStatus
+                  isOnline={adminOnline}
+                />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="font-semibold text-sm text-foreground">Main Channel</p>
+                    <p className="font-semibold text-sm text-foreground truncate">{admin?.displayName || 'Admin'}</p>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <UnreadBadge count={getUnreadBroadcastCount(slug, currentUser.id)} />
-                      {lastMainMsg && (
+                      <UnreadBadge count={dmUnread} />
+                      {lastMsg && (
                         <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(lastMainMsg.timestamp), 'hh:mm a')}
+                          {format(new Date(lastMsg.timestamp), 'hh:mm a')}
                         </span>
                       )}
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
-                    {lastMainMsg
-                      ? lastMainMsg.audioUrl ? '🎤 Voice message'
-                        : lastMainMsg.imageUrl ? '📷 Photo'
-                        : lastMainMsg.text || 'Broadcasts & direct messages'
-                      : 'Broadcasts & direct messages'}
+                    {lastMsg
+                      ? lastMsg.audioUrl ? '🎤 Voice message'
+                        : lastMsg.imageUrl ? '📷 Photo'
+                        : lastMsg.text || 'Tap to chat'
+                      : 'Tap to chat'}
                   </p>
                 </div>
               </button>
@@ -192,9 +196,11 @@ const UserDashboard = () => {
           })()}
 
           {/* Group list */}
-          <div className="px-3 py-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Groups</p>
-          </div>
+          {groups.length > 0 && (
+            <div className="px-3 py-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Groups</p>
+            </div>
+          )}
           {groups.map((group) => {
             const isActive = typeof chatView === 'object' && chatView.type === 'group' && chatView.groupId === group.id;
             const groupMsgs = getGroupMessages(group.id);
@@ -249,13 +255,18 @@ const UserDashboard = () => {
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            {chatView === 'broadcast' ? (
+            {isDMChat ? (
               <>
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Megaphone className="w-4 h-4 text-primary" />
-                </div>
+                <ProfileAvatar
+                  userId={currentUser.adminId!}
+                  displayName={admin?.displayName || 'Admin'}
+                  avatar={admin?.avatar}
+                  size="sm"
+                  showOnlineStatus
+                  isOnline={adminOnline}
+                />
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-foreground">Main Channel</p>
+                  <p className="font-semibold text-sm text-foreground truncate">{admin?.displayName || 'Admin'}</p>
                   <OnlineStatus isOnline={adminOnline} size="sm" />
                 </div>
               </>
@@ -290,22 +301,14 @@ const UserDashboard = () => {
             const u = getUserById(senderId);
             return u?.avatar;
           }}
-          getChannelLabel={(msg) => {
-            if (msg.senderId === currentUser.id) return undefined;
-            if (chatView === 'broadcast') {
-              if (!msg.recipientId && !msg.groupId) return '📢 Broadcast';
-              if (msg.recipientId) return '💬 Direct Message';
-            }
-            return undefined;
-          }}
           onReply={(msg) => {
             const u = getUserById(msg.senderId);
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
           }}
         />
-        {chatView === 'broadcast' && adminTyping && <TypingIndicator name="Admin" />}
+        {isDMChat && adminTyping && <TypingIndicator name={admin?.displayName || 'Admin'} />}
         {(() => {
-          if (chatView === 'broadcast') return isChatEnabled;
+          if (isDMChat) return isChatEnabled;
           if (isGroupChat && activeGroup) return !isMemberMuted(activeGroup.id, currentUser.id);
           return true;
         })() ? (
