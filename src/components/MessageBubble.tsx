@@ -63,6 +63,15 @@ const MessageBubble = ({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
+      {/* Sender avatar for incoming messages */}
+      {!isOutgoing && senderName && (
+        <Avatar className="h-7 w-7 mr-1.5 mt-1 shrink-0">
+          <AvatarImage src={senderAvatar} alt={senderName} />
+          <AvatarFallback className="bg-accent text-accent-foreground text-[10px] font-semibold">
+            {senderName.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      )}
       {/* Swipe reply indicator */}
       {!isOutgoing && swipeOffset > 20 && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
