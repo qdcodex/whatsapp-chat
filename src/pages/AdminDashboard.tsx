@@ -19,6 +19,7 @@ import {
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
