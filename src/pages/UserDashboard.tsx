@@ -230,10 +230,10 @@ const UserDashboard = () => {
             const lastMsg = groupMsgs[groupMsgs.length - 1];
             const lastSender = lastMsg ? getUserById(lastMsg.senderId) : null;
             return (
-              <button
+              <div
                 key={group.id}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 cursor-pointer ${isActive ? 'bg-secondary' : ''}`}
                 onClick={() => { setChatView({ type: 'group', groupId: group.id }); setShowSidebar(false); }}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${isActive ? 'bg-secondary' : ''}`}
               >
                 <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5 text-primary" />
@@ -260,7 +260,13 @@ const UserDashboard = () => {
                       : `${group.memberIds.length} members`}
                   </p>
                 </div>
-              </button>
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                  <ContactImporter
+                    triggerLabel="Invite"
+                    onImport={(contacts) => handleInviteContacts(group.id, contacts)}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
