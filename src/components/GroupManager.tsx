@@ -14,6 +14,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import UnreadBadge from '@/components/UnreadBadge';
+import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import type { User, Group } from '@/types';
 
 interface GroupManagerProps {
