@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
+import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
