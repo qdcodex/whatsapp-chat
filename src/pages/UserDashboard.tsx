@@ -133,6 +133,28 @@ const UserDashboard = () => {
     setTimeout(() => clearTyping(currentUser.id, slug), 3000);
   };
 
+  const handleInviteContacts = (groupId: string, contacts: ContactEntry[]) => {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+    contacts.forEach((c) => {
+      const existing = getUserById(c.phone.trim());
+      if (existing) {
+        addMember(groupId, existing.id);
+      } else {
+        const newUser = createUser({
+          username: c.phone.trim(),
+          password: Math.random().toString(36).slice(2, 10),
+          role: 'user',
+          displayName: c.name.trim(),
+          phone: c.phone.trim(),
+          workspaceId: slug,
+          adminId: currentUser.adminId!,
+        });
+        addMember(groupId, newUser.id);
+      }
+    });
+  };
+
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
