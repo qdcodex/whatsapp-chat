@@ -10,7 +10,7 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LogOut, Users, ArrowLeft } from 'lucide-react';
+import { LogOut, Users, ArrowLeft, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
