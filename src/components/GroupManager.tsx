@@ -123,7 +123,11 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                 </div>
                 <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <ContactImporter
+                  triggerLabel="Invite"
+                  onImport={(contacts) => handleInviteContacts(group.id, contacts)}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
