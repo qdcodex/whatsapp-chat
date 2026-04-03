@@ -26,8 +26,9 @@ interface GroupManagerProps {
 }
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
-  const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup } = useGroupStore();
+  const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup, addMember } = useGroupStore();
   const { getUnreadGroupCount } = useMessageStore();
+  const { currentUser, createUser } = useAuthStore();
   const { currentUser } = useAuthStore();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
