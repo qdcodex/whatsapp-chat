@@ -14,6 +14,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import UnreadBadge from '@/components/UnreadBadge';
+import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import type { User, Group } from '@/types';
 
 interface GroupManagerProps {
@@ -25,9 +26,9 @@ interface GroupManagerProps {
 }
 
 const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupId }: GroupManagerProps) => {
-  const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup } = useGroupStore();
+  const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup, addMember } = useGroupStore();
   const { getUnreadGroupCount } = useMessageStore();
-  const { currentUser } = useAuthStore();
+  const { currentUser, createUser } = useAuthStore();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -47,6 +48,26 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
     const url = `${window.location.origin}/join/${group.slug}`;
     navigator.clipboard.writeText(url);
     toast.success('Group link copied!');
+  };
+
+  const handleInviteContacts = (groupId: string, contacts: ContactEntry[]) => {
+    contacts.forEach((c) => {
+      const existing = users.find(u => u.phone === c.phone.trim());
+      if (existing) {
+        addMember(groupId, existing.id);
+      } else {
+        const newUser = createUser({
+          username: c.phone.trim(),
+          password: Math.random().toString(36).slice(2, 10),
+          role: 'user',
+          displayName: c.name.trim(),
+          phone: c.phone.trim(),
+          workspaceId,
+          adminId,
+        });
+        addMember(groupId, newUser.id);
+      }
+    });
   };
 
   return (
@@ -102,7 +123,11 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
                 </div>
                 <p className="text-xs text-muted-foreground">{group.memberIds.length} members</p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <ContactImporter
+                  triggerLabel="Invite"
+                  onImport={(contacts) => handleInviteContacts(group.id, contacts)}
+                />
                 <Button
                   variant="ghost"
                   size="icon"

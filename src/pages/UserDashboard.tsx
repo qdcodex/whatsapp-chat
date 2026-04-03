@@ -10,20 +10,21 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LogOut, Users, ArrowLeft } from 'lucide-react';
+import { LogOut, Users, ArrowLeft, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
+import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser, logout, getUserById, getMaskedPhone } = useAuthStore();
+  const { currentUser, logout, getUserById, getMaskedPhone, createUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
-  const { getUserGroups, isMemberMuted } = useGroupStore();
+  const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
@@ -132,6 +133,28 @@ const UserDashboard = () => {
     setTimeout(() => clearTyping(currentUser.id, slug), 3000);
   };
 
+  const handleInviteContacts = (groupId: string, contacts: ContactEntry[]) => {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+    contacts.forEach((c) => {
+      const existing = getUserById(c.phone.trim());
+      if (existing) {
+        addMember(groupId, existing.id);
+      } else {
+        const newUser = createUser({
+          username: c.phone.trim(),
+          password: Math.random().toString(36).slice(2, 10),
+          role: 'user',
+          displayName: c.name.trim(),
+          phone: c.phone.trim(),
+          workspaceId: slug,
+          adminId: currentUser.adminId!,
+        });
+        addMember(groupId, newUser.id);
+      }
+    });
+  };
+
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
@@ -207,10 +230,10 @@ const UserDashboard = () => {
             const lastMsg = groupMsgs[groupMsgs.length - 1];
             const lastSender = lastMsg ? getUserById(lastMsg.senderId) : null;
             return (
-              <button
+              <div
                 key={group.id}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 cursor-pointer ${isActive ? 'bg-secondary' : ''}`}
                 onClick={() => { setChatView({ type: 'group', groupId: group.id }); setShowSidebar(false); }}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${isActive ? 'bg-secondary' : ''}`}
               >
                 <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5 text-primary" />
@@ -237,7 +260,13 @@ const UserDashboard = () => {
                       : `${group.memberIds.length} members`}
                   </p>
                 </div>
-              </button>
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                  <ContactImporter
+                    triggerLabel="Invite"
+                    onImport={(contacts) => handleInviteContacts(group.id, contacts)}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
