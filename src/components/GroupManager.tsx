@@ -29,7 +29,6 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
   const { deleteGroup, getGroupsByWorkspace, removeMember, createGroup, addMember } = useGroupStore();
   const { getUnreadGroupCount } = useMessageStore();
   const { currentUser, createUser } = useAuthStore();
-  const { currentUser } = useAuthStore();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
