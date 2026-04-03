@@ -20,7 +20,7 @@ import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser, logout, getUserById, getMaskedPhone } = useAuthStore();
+  const { currentUser, logout, getUserById, getMaskedPhone, createUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
