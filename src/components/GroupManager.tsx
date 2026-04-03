@@ -50,6 +50,26 @@ const GroupManager = ({ workspaceId, adminId, users, onGroupSelect, activeGroupI
     toast.success('Group link copied!');
   };
 
+  const handleInviteContacts = (groupId: string, contacts: ContactEntry[]) => {
+    contacts.forEach((c) => {
+      const existing = users.find(u => u.phone === c.phone.trim());
+      if (existing) {
+        addMember(groupId, existing.id);
+      } else {
+        const newUser = createUser({
+          username: c.phone.trim(),
+          password: Math.random().toString(36).slice(2, 10),
+          role: 'user',
+          displayName: c.name.trim(),
+          phone: c.phone.trim(),
+          workspaceId,
+          adminId,
+        });
+        addMember(groupId, newUser.id);
+      }
+    });
+  };
+
   return (
     <div className="border-t border-border">
       <div className="flex items-center justify-between px-3 py-2">
