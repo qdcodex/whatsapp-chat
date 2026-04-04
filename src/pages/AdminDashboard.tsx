@@ -15,8 +15,9 @@ import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ForwardDialog from '@/components/ForwardDialog';
 import {
-  Radio, LogOut, Users, Trash2, ArrowLeft,
+  LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
+  Search, MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -44,9 +45,8 @@ const AdminDashboard = () => {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
-  
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Request notification permission
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -66,7 +66,6 @@ const AdminDashboard = () => {
     }
   }, [currentUser, workspaceId, navigate]);
 
-  // Mark messages as read when viewing a DM
   useEffect(() => {
     if (!currentUser || chatView === 'broadcast') return;
     if (typeof chatView === 'object' && chatView.type === 'dm') {
@@ -76,15 +75,16 @@ const AdminDashboard = () => {
     }
   }, [chatView, currentUser, workspaceId]);
 
-  if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
-    return null;
-  }
+  if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) return null;
 
   const workspace = getWorkspaceBySlug(workspaceId!);
   const users = getUsersByAdmin(currentUser.id);
   const groups = getGroupsByWorkspace(workspaceId!);
 
-  // Determine active messages based on chat view
+  const filteredUsers = searchQuery
+    ? users.filter(u => u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone?.includes(searchQuery))
+    : users;
+
   const getActiveMessages = () => {
     if (chatView === 'broadcast') return getBroadcastMessages(workspaceId!);
     if (chatView.type === 'dm') return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
@@ -94,12 +94,9 @@ const AdminDashboard = () => {
   const activeMessages = getActiveMessages();
 
   const activeDMUser = (typeof chatView === 'object' && chatView.type === 'dm')
-    ? users.find((u) => u.id === chatView.userId)
-    : null;
-
+    ? users.find((u) => u.id === chatView.userId) : null;
   const activeGroup = (typeof chatView === 'object' && chatView.type === 'group')
-    ? getGroupById(chatView.groupId)
-    : null;
+    ? getGroupById(chatView.groupId) : null;
 
   const handleSend = (text?: string, imageUrl?: string, audioUrl?: string, audioDuration?: number) => {
     const msgBase: any = {
@@ -107,7 +104,6 @@ const AdminDashboard = () => {
       workspaceId: workspaceId!,
       senderId: currentUser.id,
     };
-
     if (replyingTo) {
       msgBase.replyTo = {
         messageId: replyingTo.message.id,
@@ -115,7 +111,6 @@ const AdminDashboard = () => {
         senderName: replyingTo.senderName,
       };
     }
-
     if (chatView === 'broadcast') {
       sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
     } else if (chatView.type === 'dm') {
@@ -123,9 +118,7 @@ const AdminDashboard = () => {
     } else if (chatView.type === 'group') {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
     }
-
     setReplyingTo(null);
-    toast.success(chatView === 'broadcast' ? 'Broadcast sent!' : 'Message sent!');
   };
 
   const handleTyping = () => {
@@ -133,30 +126,21 @@ const AdminDashboard = () => {
     setTimeout(() => clearTyping(currentUser.id, workspaceId!), 3000);
   };
 
-
   const isUserChatEnabled = (user: User) => {
     if (user.chatEnabled !== undefined) return user.chatEnabled;
     return workspace?.globalChatEnabled ?? false;
   };
 
-  
-  const openDM = (userId: string) => {
-    setChatView({ type: 'dm', userId });
-    setShowSidebar(false);
-  };
-
-  const openGroup = (groupId: string) => {
-    setChatView({ type: 'group', groupId });
-    setShowSidebar(false);
-  };
+  const openDM = (userId: string) => { setChatView({ type: 'dm', userId }); setShowSidebar(false); };
+  const openGroup = (groupId: string) => { setChatView({ type: 'group', groupId }); setShowSidebar(false); };
 
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
-      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-border bg-card shrink-0`}>
-        {/* Sidebar Header */}
-        <div className="h-14 px-3 flex items-center justify-between border-b border-border shrink-0">
-          <div className="flex items-center gap-2">
+      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[340px] lg:w-[400px] border-r border-border bg-card shrink-0`}>
+        {/* WhatsApp-style header */}
+        <div className="h-14 px-4 flex items-center justify-between bg-wa-header shrink-0">
+          <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={currentUser.id}
               displayName={currentUser.displayName}
@@ -164,13 +148,14 @@ const AdminDashboard = () => {
               size="sm"
               editable
             />
-            <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || workspaceId}</h1>
+            <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || workspaceId}</h1>
           </div>
-          <div className="flex items-center gap-1">
-            
+          <div className="flex items-center gap-0.5">
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
+                  <Settings className="w-5 h-5" />
+                </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
                 <DialogHeader><DialogTitle>Chat Settings</DialogTitle></DialogHeader>
@@ -220,39 +205,49 @@ const AdminDashboard = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { logout(); navigate('/'); }}>
-              <LogOut className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg" onClick={() => { logout(); navigate('/'); }}>
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
+        {/* Search bar */}
+        <div className="px-2.5 py-2 bg-card border-b border-border">
+          <div className="flex items-center gap-2 bg-wa-sidebar-header rounded-lg px-3 py-1.5">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              placeholder="Search or start new chat"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
         {/* Chat list */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Join Requests */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
           <JoinRequestsList workspaceId={workspaceId!} />
 
-          {/* Broadcast channel */}
+          {/* Broadcast */}
           <button
             onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
-            className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/50 ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
           >
-            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Megaphone className="w-5 h-5 text-primary" />
+            <div className="w-12 h-12 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
+              <Megaphone className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-sm text-foreground">Broadcast</p>
-                <div className="flex items-center gap-1.5">
-                  <UnreadBadge count={getUnreadBroadcastCount(workspaceId!, currentUser.id)} />
-                  <span className="text-[10px] text-muted-foreground">{users.length} users</span>
-                </div>
+                <p className="font-medium text-[15px] text-foreground">Broadcast</p>
+                <span className="text-[11px] text-muted-foreground">{users.length} users</span>
               </div>
-              <p className="text-xs text-muted-foreground truncate">Tap to send to all users</p>
+              <p className="text-[13px] text-muted-foreground truncate mt-0.5">Tap to send to all users</p>
             </div>
           </button>
 
-          {/* User DM list */}
-          {users.map((user) => {
+          {/* User DMs */}
+          {filteredUsers.map((user) => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
             const dmUnread = getUnreadDMCount(workspaceId!, currentUser.id, user.id);
             const isActive = typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId === user.id;
@@ -260,52 +255,52 @@ const AdminDashboard = () => {
               <button
                 key={user.id}
                 onClick={() => openDM(user.id)}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${isActive ? 'bg-secondary' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isActive ? 'bg-secondary' : ''}`}
               >
-                <div className="relative shrink-0">
-                  <ProfileAvatar
-                    userId={user.id}
-                    displayName={user.displayName}
-                    avatar={user.avatar}
-                    size="md"
-                    showOnlineStatus
-                    isOnline={checkOnline(user.id)}
-                  />
-                </div>
+                <ProfileAvatar
+                  userId={user.id}
+                  displayName={user.displayName}
+                  avatar={user.avatar}
+                  size="md"
+                  showOnlineStatus
+                  isOnline={checkOnline(user.id)}
+                />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm text-foreground truncate">{user.displayName}</p>
+                    <p className="font-medium text-[15px] text-foreground truncate">{user.displayName}</p>
                     <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                      <UnreadBadge count={dmUnread} />
                       {preview && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(preview.timestamp), 'hh:mm a')}
+                        <span className={`text-[11px] ${dmUnread > 0 ? 'text-wa-unread font-medium' : 'text-muted-foreground'}`}>
+                          {format(new Date(preview.timestamp), 'h:mm a')}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {isUserChatEnabled(user) && (
-                      <MessageCircle className="w-3 h-3 text-primary shrink-0" />
-                    )}
-                    <p className="text-xs text-muted-foreground truncate">
-                      {preview
-                        ? preview.audioUrl ? '🎤 Voice message'
-                          : preview.imageUrl ? '📷 Photo'
-                          : preview.text || ''
-                        : 'No messages yet'}
-                    </p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <div className="flex items-center gap-1 min-w-0">
+                      {isUserChatEnabled(user) && (
+                        <MessageCircle className="w-3 h-3 text-primary shrink-0" />
+                      )}
+                      <p className="text-[13px] text-muted-foreground truncate">
+                        {preview
+                          ? preview.audioUrl ? '🎤 Voice message'
+                            : preview.imageUrl ? '📷 Photo'
+                            : preview.text || ''
+                          : 'No messages yet'}
+                      </p>
+                    </div>
+                    <UnreadBadge count={dmUnread} />
                   </div>
                 </div>
               </button>
             );
           })}
 
-          {users.length === 0 && (
+          {filteredUsers.length === 0 && !searchQuery && (
             <div className="p-8 text-center text-muted-foreground">
               <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">No users yet</p>
-              <p className="text-xs mt-1">Add users to start chatting</p>
+              <p className="text-xs mt-1">Users will appear when they join</p>
             </div>
           )}
 
@@ -322,25 +317,25 @@ const AdminDashboard = () => {
 
       {/* Chat Panel */}
       <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-w-0`}>
-        {/* Chat Header */}
-        <div className="h-14 px-3 flex items-center justify-between border-b border-border bg-card shrink-0">
+        {/* WhatsApp-style chat header */}
+        <div className="h-14 px-3 flex items-center justify-between bg-wa-header shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 md:hidden shrink-0"
+              className="h-9 w-9 md:hidden shrink-0 text-wa-header-fg/80 hover:bg-wa-teal-dark"
               onClick={() => setShowSidebar(true)}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             {chatView === 'broadcast' ? (
               <>
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Megaphone className="w-4 h-4 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
+                  <Megaphone className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-foreground">Broadcast</p>
-                  <p className="text-[11px] text-muted-foreground">{users.length} recipients</p>
+                  <p className="font-medium text-[15px] text-wa-header-fg">Broadcast</p>
+                  <p className="text-[12px] text-wa-header-fg/60">{users.length} recipients</p>
                 </div>
               </>
             ) : activeDMUser ? (
@@ -354,7 +349,7 @@ const AdminDashboard = () => {
                   isOnline={checkOnline(activeDMUser.id)}
                 />
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-foreground truncate">{activeDMUser.displayName}</p>
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{activeDMUser.displayName}</p>
                   <OnlineStatus isOnline={checkOnline(activeDMUser.id)} lastSeen={getLastSeen(activeDMUser.id)} size="sm" />
                 </div>
               </>
@@ -363,34 +358,34 @@ const AdminDashboard = () => {
                 onClick={() => setGroupInfoOpen(true)}
                 className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
               >
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-wa-header-fg" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <p className="font-semibold text-sm text-foreground truncate">{activeGroup.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members · tap for info</p>
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{activeGroup.name}</p>
+                  <p className="text-[12px] text-wa-header-fg/60">{activeGroup.memberIds.length} members</p>
                 </div>
               </button>
             ) : null}
           </div>
           {activeDMUser && (
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-0.5 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs gap-1 h-8"
+                className="text-xs gap-1 h-8 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg"
                 onClick={() => { toggleUserChat(activeDMUser.id); toast.success('Chat permission updated'); }}
               >
                 {isUserChatEnabled(activeDMUser) ? (
-                  <><ToggleRight className="w-4 h-4 text-primary" /><span className="hidden sm:inline">Chat On</span></>
+                  <><ToggleRight className="w-4 h-4" /><span className="hidden sm:inline">Chat On</span></>
                 ) : (
-                  <><ToggleLeft className="w-4 h-4 text-muted-foreground" /><span className="hidden sm:inline">Chat Off</span></>
+                  <><ToggleLeft className="w-4 h-4" /><span className="hidden sm:inline">Chat Off</span></>
                 )}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                className="text-wa-header-fg/60 hover:bg-wa-teal-dark hover:text-destructive h-8 w-8"
                 onClick={() => { deleteUser(activeDMUser.id); setChatView('broadcast'); toast.success('User removed'); }}
               >
                 <Trash2 className="w-4 h-4" />
@@ -425,12 +420,10 @@ const AdminDashboard = () => {
           onForward={(msg) => setForwardMsg(msg)}
         />
 
-        {/* Typing indicator */}
         {typeof chatView === 'object' && chatView.type === 'dm' && checkTyping(chatView.userId, workspaceId!) && (
           <TypingIndicator name={activeDMUser?.displayName || 'User'} />
         )}
 
-        {/* Composer */}
         <MessageComposer
           onSend={handleSend}
           onTyping={handleTyping}

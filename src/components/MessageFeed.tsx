@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import type { Message } from '@/types';
 import MessageBubble from './MessageBubble';
-import { MessageSquare } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 interface MessageFeedProps {
   messages: Message[];
@@ -38,18 +38,29 @@ const MessageFeed = ({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8">
-        <MessageSquare className="w-16 h-16 mb-4 opacity-30" />
-        <p className="text-lg font-medium">No messages yet</p>
-        <p className="text-sm mt-1">
-          {isAdmin ? 'Send your first message' : 'Messages will appear here'}
-        </p>
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 wa-chat-bg">
+        <div className="bg-card/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm text-center max-w-xs">
+          <Lock className="w-4 h-4 mx-auto mb-1.5 text-muted-foreground/60" />
+          <p className="text-xs text-muted-foreground">
+            Messages are end-to-end encrypted. No one outside of this chat can read them.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin bg-chat-bg">
+    <div className="flex-1 overflow-y-auto py-2 scrollbar-thin wa-chat-bg">
+      {/* Encryption notice */}
+      <div className="flex justify-center mb-3 mt-1">
+        <div className="bg-card/70 backdrop-blur-sm rounded-md px-3 py-1.5 shadow-sm">
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            Messages are end-to-end encrypted
+          </p>
+        </div>
+      </div>
+
       {messages.map((msg) => (
         <MessageBubble
           key={msg.id}

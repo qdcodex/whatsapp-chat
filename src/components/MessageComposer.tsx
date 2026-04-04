@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Square, Reply } from 'lucide-react';
+import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -46,11 +46,8 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
     }
   }, [text]);
 
-  // Focus textarea when replying
   useEffect(() => {
-    if (replyingTo) {
-      textareaRef.current?.focus();
-    }
+    if (replyingTo) textareaRef.current?.focus();
   }, [replyingTo]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,13 +138,13 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
   const hasContent = text.trim() || imagePreview;
 
   const attachmentOptions = [
-    { icon: ImageIcon, label: 'Gallery', color: 'text-violet-500', onClick: () => fileRef.current?.click() },
-    { icon: Camera, label: 'Camera', color: 'text-pink-500', onClick: () => cameraRef.current?.click() },
-    { icon: FileText, label: 'Document', color: 'text-blue-500', onClick: () => docRef.current?.click() },
+    { icon: ImageIcon, label: 'Gallery', bg: 'bg-violet-500', onClick: () => fileRef.current?.click() },
+    { icon: Camera, label: 'Camera', bg: 'bg-pink-500', onClick: () => cameraRef.current?.click() },
+    { icon: FileText, label: 'Document', bg: 'bg-blue-500', onClick: () => docRef.current?.click() },
   ];
 
   return (
-    <div className="border-t border-border bg-card px-2 py-2 relative safe-area-bottom">
+    <div className="bg-wa-sidebar-header px-2 py-1.5 relative safe-area-bottom">
       {/* Emoji Picker */}
       {showEmoji && (
         <div ref={emojiRef} className="absolute bottom-full left-0 sm:left-2 mb-2 z-50 shadow-xl rounded-xl overflow-hidden max-w-[calc(100vw-16px)]">
@@ -158,17 +155,17 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
       {/* Attachment Menu */}
       {showAttach && (
         <div ref={attachRef} className="absolute bottom-full left-2 sm:left-12 mb-2 z-50">
-          <div className="bg-card border border-border rounded-2xl shadow-xl p-3 flex gap-4">
+          <div className="bg-card border border-border rounded-2xl shadow-xl p-4 grid grid-cols-3 gap-4">
             {attachmentOptions.map((opt) => (
               <button
                 key={opt.label}
                 onClick={opt.onClick}
                 className="flex flex-col items-center gap-1.5 hover:scale-110 active:scale-95 transition-transform"
               >
-                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-secondary flex items-center justify-center ${opt.color}`}>
+                <div className={`w-12 h-12 rounded-full ${opt.bg} flex items-center justify-center text-primary-foreground`}>
                   <opt.icon className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] text-muted-foreground font-medium">{opt.label}</span>
+                <span className="text-[11px] text-muted-foreground font-medium">{opt.label}</span>
               </button>
             ))}
           </div>
@@ -182,7 +179,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
 
       {/* Reply preview */}
       {replyingTo && (
-        <div className="flex items-center gap-2 mb-2 mx-1 bg-secondary/50 rounded-xl px-3 py-2 border-l-2 border-primary">
+        <div className="flex items-center gap-2 mb-1.5 mx-1 bg-card rounded-lg px-3 py-2 border-l-[3px] border-primary">
           <Reply className="w-4 h-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-primary">{replyingTo.senderName}</p>
@@ -198,7 +195,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
 
       {/* Image Preview */}
       {imagePreview && (
-        <div className="relative inline-block mb-2 ml-1">
+        <div className="relative inline-block mb-1.5 ml-1">
           <img src={imagePreview} alt="Preview" className="h-20 rounded-lg object-cover" />
           <button
             onClick={() => setImagePreview(null)}
@@ -211,7 +208,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
 
       {/* Recording state */}
       {isRecording ? (
-        <div className="flex items-center gap-2 py-1">
+        <div className="flex items-center gap-2 py-0.5">
           <Button
             variant="ghost"
             size="icon"
@@ -220,7 +217,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
           >
             <X className="w-5 h-5" />
           </Button>
-          <div className="flex-1 flex items-center gap-2">
+          <div className="flex-1 flex items-center gap-2 bg-card rounded-full px-4 py-2">
             <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
             <span className="text-sm font-medium text-destructive">{formatTime(recordingTime)}</span>
             <div className="flex-1 h-1 rounded-full bg-destructive/20 overflow-hidden">
@@ -229,57 +226,58 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
           </div>
           <Button
             size="icon"
-            className="shrink-0 rounded-full h-10 w-10"
+            className="shrink-0 rounded-full h-11 w-11 bg-primary hover:bg-primary/90"
             onClick={stopRecording}
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </Button>
         </div>
       ) : (
-        /* Normal composer row */
+        /* Normal composer */
         <div className="flex items-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 sm:h-10 sm:w-10"
-            onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); }}
-          >
-            <Smile className="w-5 h-5" />
-          </Button>
+          <div className="flex-1 flex items-end bg-card rounded-full px-1 border border-border/50">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 rounded-full"
+              onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); }}
+            >
+              <Smile className="w-5 h-5" />
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 sm:h-10 sm:w-10"
-            onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); }}
-          >
-            <Paperclip className="w-5 h-5" />
-          </Button>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => { setText(e.target.value); onTyping?.(); }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
+              placeholder="Type a message"
+              rows={1}
+              className="flex-1 resize-none bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground max-h-[120px] min-h-[36px]"
+            />
 
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => { setText(e.target.value); onTyping?.(); }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
-            placeholder="Type a message..."
-            rows={1}
-            className="flex-1 resize-none bg-secondary rounded-2xl px-3 sm:px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground max-h-[120px] min-h-[40px]"
-          />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9 rounded-full"
+              onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); }}
+            >
+              <Paperclip className="w-5 h-5" />
+            </Button>
+          </div>
 
           {hasContent ? (
             <Button
               size="icon"
-              className="shrink-0 rounded-full h-9 w-9 sm:h-10 sm:w-10"
+              className="shrink-0 rounded-full h-11 w-11 bg-primary hover:bg-primary/90"
               onClick={handleSend}
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </Button>
           ) : (
             <Button
-              variant="ghost"
               size="icon"
-              className="shrink-0 rounded-full h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary"
+              className="shrink-0 rounded-full h-11 w-11 bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={startRecording}
             >
               <Mic className="w-5 h-5" />
