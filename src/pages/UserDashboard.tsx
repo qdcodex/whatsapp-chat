@@ -10,7 +10,7 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LogOut, Users, ArrowLeft, UserPlus } from 'lucide-react';
+import { LogOut, Users, ArrowLeft, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
@@ -51,7 +51,6 @@ const UserDashboard = () => {
     }
   }, [currentUser, navigate]);
 
-  // Initialize chatView with admin DM once we know adminId
   useEffect(() => {
     if (currentUser?.adminId) {
       setChatView((prev) => {
@@ -85,7 +84,6 @@ const UserDashboard = () => {
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
   const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
 
-  // Mark incoming messages as read
   const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
   if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
@@ -158,9 +156,10 @@ const UserDashboard = () => {
   return (
     <div className="h-[100dvh] flex bg-background">
       {/* Sidebar */}
-      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-border bg-card shrink-0`}>
-        <div className="h-14 px-3 flex items-center justify-between border-b border-border shrink-0">
-          <div className="flex items-center gap-2">
+      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[340px] lg:w-[400px] border-r border-border bg-card shrink-0`}>
+        {/* WhatsApp header */}
+        <div className="h-14 px-4 flex items-center justify-between bg-wa-header shrink-0">
+          <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={currentUser.id}
               displayName={currentUser.displayName}
@@ -168,14 +167,26 @@ const UserDashboard = () => {
               size="sm"
               editable
             />
-            <h1 className="font-bold text-sm text-foreground truncate">{workspace?.name || 'Messages'}</h1>
+            <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || 'Messages'}</h1>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { logout(); navigate('/'); }}>
-            <LogOut className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg" onClick={() => { logout(); navigate('/'); }}>
+            <LogOut className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* Search */}
+        <div className="px-2.5 py-2 bg-card border-b border-border">
+          <div className="flex items-center gap-2 bg-wa-sidebar-header rounded-lg px-3 py-1.5">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              placeholder="Search"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
           {/* Admin DM */}
           {(() => {
             const dmMsgs = getDMMessages(slug, currentUser.id, currentUser.adminId!);
@@ -184,7 +195,7 @@ const UserDashboard = () => {
             return (
               <button
                 onClick={() => { setChatView({ type: 'dm', userId: currentUser.adminId! }); setShowSidebar(false); }}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border ${isDMChat ? 'bg-secondary' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isDMChat ? 'bg-secondary' : ''}`}
               >
                 <ProfileAvatar
                   userId={currentUser.adminId!}
@@ -196,32 +207,34 @@ const UserDashboard = () => {
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="font-semibold text-sm text-foreground truncate">{admin?.displayName || 'Admin'}</p>
+                    <p className="font-medium text-[15px] text-foreground truncate">{admin?.displayName || 'Admin'}</p>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <UnreadBadge count={dmUnread} />
                       {lastMsg && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(lastMsg.timestamp), 'hh:mm a')}
+                        <span className={`text-[11px] ${dmUnread > 0 ? 'text-wa-unread font-medium' : 'text-muted-foreground'}`}>
+                          {format(new Date(lastMsg.timestamp), 'h:mm a')}
                         </span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {lastMsg
-                      ? lastMsg.audioUrl ? '🎤 Voice message'
-                        : lastMsg.imageUrl ? '📷 Photo'
-                        : lastMsg.text || 'Tap to chat'
-                      : 'Tap to chat'}
-                  </p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[13px] text-muted-foreground truncate">
+                      {lastMsg
+                        ? lastMsg.audioUrl ? '🎤 Voice message'
+                          : lastMsg.imageUrl ? '📷 Photo'
+                          : lastMsg.text || 'Tap to chat'
+                        : 'Tap to chat'}
+                    </p>
+                    <UnreadBadge count={dmUnread} />
+                  </div>
                 </div>
               </button>
             );
           })()}
 
-          {/* Group list */}
+          {/* Groups */}
           {groups.length > 0 && (
-            <div className="px-3 py-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Groups</p>
+            <div className="px-4 py-2.5">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Groups</p>
             </div>
           )}
           {groups.map((group) => {
@@ -232,33 +245,35 @@ const UserDashboard = () => {
             return (
               <div
                 key={group.id}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 cursor-pointer ${isActive ? 'bg-secondary' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 cursor-pointer ${isActive ? 'bg-secondary' : ''}`}
                 onClick={() => { setChatView({ type: 'group', groupId: group.id }); setShowSidebar(false); }}
               >
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm text-foreground truncate">{group.name}</p>
+                    <p className="font-medium text-[15px] text-foreground truncate">{group.name}</p>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
                       {lastMsg && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(lastMsg.timestamp), 'hh:mm a')}
+                        <span className="text-[11px] text-muted-foreground">
+                          {format(new Date(lastMsg.timestamp), 'h:mm a')}
                         </span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {lastMsg
-                      ? `${lastMsg.senderId === currentUser.id ? 'You' : (lastSender?.displayName || 'Unknown')}: ${
-                          lastMsg.audioUrl ? '🎤 Voice message'
-                            : lastMsg.imageUrl ? '📷 Photo'
-                            : lastMsg.text || ''
-                        }`
-                      : `${group.memberIds.length} members`}
-                  </p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[13px] text-muted-foreground truncate">
+                      {lastMsg
+                        ? `${lastMsg.senderId === currentUser.id ? 'You' : (lastSender?.displayName || 'Unknown')}: ${
+                            lastMsg.audioUrl ? '🎤 Voice message'
+                              : lastMsg.imageUrl ? '📷 Photo'
+                              : lastMsg.text || ''
+                          }`
+                        : `${group.memberIds.length} members`}
+                    </p>
+                    <UnreadBadge count={getUnreadGroupCount(group.id, currentUser.id)} />
+                  </div>
                 </div>
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                   <ContactImporter
@@ -274,15 +289,16 @@ const UserDashboard = () => {
 
       {/* Chat Panel */}
       <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-w-0`}>
-        <div className="h-14 px-3 flex items-center justify-between border-b border-border bg-card shrink-0">
+        {/* WhatsApp header */}
+        <div className="h-14 px-3 flex items-center justify-between bg-wa-header shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 md:hidden shrink-0"
+              className="h-9 w-9 md:hidden shrink-0 text-wa-header-fg/80 hover:bg-wa-teal-dark"
               onClick={() => setShowSidebar(true)}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             {isDMChat ? (
               <>
@@ -295,7 +311,7 @@ const UserDashboard = () => {
                   isOnline={adminOnline}
                 />
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-foreground truncate">{admin?.displayName || 'Admin'}</p>
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{admin?.displayName || 'Admin'}</p>
                   <OnlineStatus isOnline={adminOnline} size="sm" />
                 </div>
               </>
@@ -304,12 +320,12 @@ const UserDashboard = () => {
                 onClick={() => setGroupInfoOpen(true)}
                 className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
               >
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-wa-header-fg" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <p className="font-semibold text-sm text-foreground truncate">{activeGroup.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeGroup.memberIds.length} members · tap for info</p>
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{activeGroup.name}</p>
+                  <p className="text-[12px] text-wa-header-fg/60">{activeGroup.memberIds.length} members · tap for info</p>
                 </div>
               </button>
             ) : null}
@@ -348,7 +364,7 @@ const UserDashboard = () => {
             onCancelReply={() => setReplyingTo(null)}
           />
         ) : (
-          <div className="px-4 py-3 text-center border-t border-border bg-card">
+          <div className="px-4 py-3 text-center bg-wa-sidebar-header">
             <p className="text-sm text-muted-foreground">
               {isGroupChat ? '🔇 You are muted in this group' : '💬 Chat is disabled'}
             </p>
