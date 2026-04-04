@@ -63,6 +63,20 @@ export default {
           "bubble-in": "hsl(var(--chat-bubble-in))",
           timestamp: "hsl(var(--chat-timestamp))",
         },
+        wa: {
+          header: "hsl(var(--wa-header))",
+          "header-fg": "hsl(var(--wa-header-fg))",
+          "sidebar-header": "hsl(var(--wa-sidebar-header))",
+          "search-bg": "hsl(var(--wa-search-bg))",
+          "chat-bg": "hsl(var(--wa-chat-bg))",
+          "bubble-out": "hsl(var(--wa-bubble-out))",
+          "bubble-in": "hsl(var(--wa-bubble-in))",
+          time: "hsl(var(--wa-time))",
+          "teal-dark": "hsl(var(--wa-teal-dark))",
+          "green-icon": "hsl(var(--wa-green-icon))",
+          "blue-tick": "hsl(var(--wa-blue-tick))",
+          unread: "hsl(var(--wa-unread))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -71,20 +85,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
