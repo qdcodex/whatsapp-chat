@@ -8,8 +8,6 @@ interface OnlineStatusProps {
 }
 
 const OnlineStatus = ({ isOnline, lastSeen, showLabel = true, size = 'sm' }: OnlineStatusProps) => {
-  const dotSize = size === 'sm' ? 'w-2 h-2' : 'w-2.5 h-2.5';
-
   const getLabel = () => {
     if (isOnline) return 'online';
     if (!lastSeen) return 'offline';
@@ -22,20 +20,14 @@ const OnlineStatus = ({ isOnline, lastSeen, showLabel = true, size = 'sm' }: Onl
     return `last seen ${Math.floor(hours / 24)}d ago`;
   };
 
+  if (!showLabel) return null;
+
   return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className={cn(
-          dotSize,
-          'rounded-full shrink-0',
-          isOnline
-            ? 'bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.5)]'
-            : 'bg-muted-foreground/40'
-        )}
-      />
-      {showLabel && (
-        <span className="text-xs text-muted-foreground">{getLabel()}</span>
-      )}
+    <span className={cn(
+      'text-xs',
+      isOnline ? 'text-wa-header-fg/80' : 'text-muted-foreground'
+    )}>
+      {getLabel()}
     </span>
   );
 };
