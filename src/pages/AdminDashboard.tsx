@@ -110,9 +110,7 @@ const AdminDashboard = () => {
         senderName: replyingTo.senderName,
       };
     }
-    if (chatView === 'broadcast') {
-      sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
-    } else if (chatView.type === 'dm') {
+    if (typeof chatView === 'object' && chatView.type === 'dm') {
       sendMessage({ ...msgBase, recipientId: chatView.userId, text, imageUrl, audioUrl, audioDuration });
     } else if (chatView.type === 'group') {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
