@@ -67,8 +67,8 @@ const AdminDashboard = () => {
   }, [currentUser, workspaceId, navigate]);
 
   useEffect(() => {
-    if (!currentUser || chatView === 'broadcast') return;
-    if (typeof chatView === 'object' && chatView.type === 'dm') {
+    if (!currentUser) return;
+    if (typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId) {
       const msgs = getDMMessages(workspaceId!, currentUser.id, chatView.userId);
       const unread = msgs.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
       if (unread.length > 0) markAsRead(unread.map((m) => m.id));
