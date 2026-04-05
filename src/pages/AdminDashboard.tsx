@@ -226,23 +226,6 @@ const AdminDashboard = () => {
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <JoinRequestsList workspaceId={workspaceId!} />
 
-          {/* Broadcast */}
-          <button
-            onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
-            className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/50 ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
-          >
-            <div className="w-12 h-12 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
-              <Megaphone className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-[15px] text-foreground">Broadcast</p>
-                <span className="text-[11px] text-muted-foreground">{users.length} users</span>
-              </div>
-              <p className="text-[13px] text-muted-foreground truncate mt-0.5">Tap to send to all users</p>
-            </div>
-          </button>
-
           {/* User DMs */}
           {filteredUsers.map((user) => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
