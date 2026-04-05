@@ -112,7 +112,7 @@ const AdminDashboard = () => {
     }
     if (typeof chatView === 'object' && chatView.type === 'dm') {
       sendMessage({ ...msgBase, recipientId: chatView.userId, text, imageUrl, audioUrl, audioDuration });
-    } else if (chatView.type === 'group') {
+    } else if (typeof chatView === 'object' && chatView.type === 'group') {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
     }
     setReplyingTo(null);
