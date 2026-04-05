@@ -86,9 +86,8 @@ const AdminDashboard = () => {
     : users;
 
   const getActiveMessages = () => {
-    if (chatView === 'broadcast') return getBroadcastMessages(workspaceId!);
-    if (chatView.type === 'dm') return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
-    if (chatView.type === 'group') return getGroupMessages(chatView.groupId);
+    if (typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId) return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
+    if (typeof chatView === 'object' && chatView.type === 'group') return getGroupMessages(chatView.groupId);
     return [];
   };
   const activeMessages = getActiveMessages();
