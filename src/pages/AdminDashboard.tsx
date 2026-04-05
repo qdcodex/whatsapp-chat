@@ -356,7 +356,7 @@ const AdminDashboard = () => {
                 variant="ghost"
                 size="icon"
                 className="text-wa-header-fg/60 hover:bg-wa-teal-dark hover:text-destructive h-8 w-8"
-                onClick={() => { deleteUser(activeDMUser.id); setChatView('broadcast'); toast.success('User removed'); }}
+                onClick={() => { deleteUser(activeDMUser.id); setChatView({ type: 'dm', userId: '' }); toast.success('User removed'); }}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
