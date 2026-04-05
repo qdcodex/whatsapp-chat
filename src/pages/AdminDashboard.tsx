@@ -39,7 +39,7 @@ const AdminDashboard = () => {
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
 
-  const [chatView, setChatView] = useState<ChatView>('broadcast');
+  const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
