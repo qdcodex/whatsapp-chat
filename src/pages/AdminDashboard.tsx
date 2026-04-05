@@ -308,17 +308,7 @@ const AdminDashboard = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            {chatView === 'broadcast' ? (
-              <>
-                <div className="w-10 h-10 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
-                  <Megaphone className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-[15px] text-wa-header-fg">Broadcast</p>
-                  <p className="text-[12px] text-wa-header-fg/60">{users.length} recipients</p>
-                </div>
-              </>
-            ) : activeDMUser ? (
+            {activeDMUser ? (
               <>
                 <ProfileAvatar
                   userId={activeDMUser.id}
