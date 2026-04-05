@@ -16,8 +16,8 @@ import UnreadBadge from '@/components/UnreadBadge';
 import ForwardDialog from '@/components/ForwardDialog';
 import {
   LogOut, Users, Trash2, ArrowLeft,
-  Settings, MessageCircle, Megaphone, ToggleLeft, ToggleRight,
-  Search, MoreVertical,
+  Settings, MessageCircle, ToggleLeft, ToggleRight,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -34,12 +34,12 @@ const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById } = useAuthStore();
-  const { sendMessage, getBroadcastMessages, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount, getUnreadBroadcastCount } = useMessageStore();
+  const { sendMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
 
-  const [chatView, setChatView] = useState<ChatView>('broadcast');
+  const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
@@ -67,8 +67,8 @@ const AdminDashboard = () => {
   }, [currentUser, workspaceId, navigate]);
 
   useEffect(() => {
-    if (!currentUser || chatView === 'broadcast') return;
-    if (typeof chatView === 'object' && chatView.type === 'dm') {
+    if (!currentUser) return;
+    if (typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId) {
       const msgs = getDMMessages(workspaceId!, currentUser.id, chatView.userId);
       const unread = msgs.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
       if (unread.length > 0) markAsRead(unread.map((m) => m.id));
@@ -86,9 +86,8 @@ const AdminDashboard = () => {
     : users;
 
   const getActiveMessages = () => {
-    if (chatView === 'broadcast') return getBroadcastMessages(workspaceId!);
-    if (chatView.type === 'dm') return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
-    if (chatView.type === 'group') return getGroupMessages(chatView.groupId);
+    if (typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId) return getDMMessages(workspaceId!, currentUser.id, chatView.userId);
+    if (typeof chatView === 'object' && chatView.type === 'group') return getGroupMessages(chatView.groupId);
     return [];
   };
   const activeMessages = getActiveMessages();
@@ -111,11 +110,9 @@ const AdminDashboard = () => {
         senderName: replyingTo.senderName,
       };
     }
-    if (chatView === 'broadcast') {
-      sendMessage({ ...msgBase, text, imageUrl, audioUrl, audioDuration });
-    } else if (chatView.type === 'dm') {
+    if (typeof chatView === 'object' && chatView.type === 'dm') {
       sendMessage({ ...msgBase, recipientId: chatView.userId, text, imageUrl, audioUrl, audioDuration });
-    } else if (chatView.type === 'group') {
+    } else if (typeof chatView === 'object' && chatView.type === 'group') {
       sendMessage({ ...msgBase, groupId: chatView.groupId, text, imageUrl, audioUrl, audioDuration });
     }
     setReplyingTo(null);
@@ -229,23 +226,6 @@ const AdminDashboard = () => {
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <JoinRequestsList workspaceId={workspaceId!} />
 
-          {/* Broadcast */}
-          <button
-            onClick={() => { setChatView('broadcast'); setShowSidebar(false); }}
-            className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/50 ${chatView === 'broadcast' ? 'bg-secondary' : ''}`}
-          >
-            <div className="w-12 h-12 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
-              <Megaphone className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-[15px] text-foreground">Broadcast</p>
-                <span className="text-[11px] text-muted-foreground">{users.length} users</span>
-              </div>
-              <p className="text-[13px] text-muted-foreground truncate mt-0.5">Tap to send to all users</p>
-            </div>
-          </button>
-
           {/* User DMs */}
           {filteredUsers.map((user) => {
             const preview = getConversationPreview(workspaceId!, currentUser.id, user.id);
@@ -328,17 +308,7 @@ const AdminDashboard = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            {chatView === 'broadcast' ? (
-              <>
-                <div className="w-10 h-10 rounded-full bg-wa-green-icon flex items-center justify-center shrink-0">
-                  <Megaphone className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-[15px] text-wa-header-fg">Broadcast</p>
-                  <p className="text-[12px] text-wa-header-fg/60">{users.length} recipients</p>
-                </div>
-              </>
-            ) : activeDMUser ? (
+            {activeDMUser ? (
               <>
                 <ProfileAvatar
                   userId={activeDMUser.id}
@@ -386,7 +356,7 @@ const AdminDashboard = () => {
                 variant="ghost"
                 size="icon"
                 className="text-wa-header-fg/60 hover:bg-wa-teal-dark hover:text-destructive h-8 w-8"
-                onClick={() => { deleteUser(activeDMUser.id); setChatView('broadcast'); toast.success('User removed'); }}
+                onClick={() => { deleteUser(activeDMUser.id); setChatView({ type: 'dm', userId: '' }); toast.success('User removed'); }}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
