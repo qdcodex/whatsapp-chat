@@ -34,6 +34,29 @@ const UserDashboard = () => {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [, setTick] = useState(0);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+
+  const handleCreateContact = () => {
+    if (!newUserName.trim()) { toast.error('Name is required'); return; }
+    if (!newUserPhone.trim()) { toast.error('Phone number is required'); return; }
+    const existing = getUserById(newUserPhone.trim());
+    if (existing) { toast.error('A user with this phone already exists'); return; }
+    const user = createUser({
+      username: newUserPhone.trim(),
+      password: Math.random().toString(36).slice(2, 10),
+      role: 'user',
+      displayName: newUserName.trim(),
+      phone: newUserPhone.trim(),
+      workspaceId: slug,
+      adminId: currentUser!.adminId!,
+    });
+    setNewUserName('');
+    setNewUserPhone('');
+    setCreateUserOpen(false);
+    toast.success(`${user.displayName} added as contact`);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
