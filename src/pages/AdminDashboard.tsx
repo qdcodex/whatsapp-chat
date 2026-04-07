@@ -17,7 +17,7 @@ import ForwardDialog from '@/components/ForwardDialog';
 import {
   LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, ToggleLeft, ToggleRight,
-  Search,
+  Search, UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
