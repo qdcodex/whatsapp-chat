@@ -17,7 +17,7 @@ import ForwardDialog from '@/components/ForwardDialog';
 import {
   LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, ToggleLeft, ToggleRight,
-  Search,
+  Search, UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -33,7 +33,7 @@ import type { ChatView, User } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
-  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById } = useAuthStore();
+  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser } = useAuthStore();
   const { sendMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
@@ -46,6 +46,30 @@ const AdminDashboard = () => {
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+
+  const handleCreateUser = () => {
+    if (!newUserName.trim()) { toast.error('Name is required'); return; }
+    if (!newUserPhone.trim()) { toast.error('Phone number is required'); return; }
+    const existing = users.find(u => u.phone === newUserPhone.trim());
+    if (existing) { toast.error('A user with this phone already exists'); return; }
+    const user = createUser({
+      username: newUserPhone.trim(),
+      password: Math.random().toString(36).slice(2, 10),
+      role: 'user',
+      displayName: newUserName.trim(),
+      phone: newUserPhone.trim(),
+      workspaceId: workspaceId!,
+      adminId: currentUser!.id,
+    });
+    setNewUserName('');
+    setNewUserPhone('');
+    setCreateUserOpen(false);
+    toast.success(`${user.displayName} added`);
+    openDM(user.id);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
@@ -148,6 +172,27 @@ const AdminDashboard = () => {
             <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-0.5">
+            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
+                  <UserPlus className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
+                <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newUserName">Display Name</Label>
+                    <Input id="newUserName" placeholder="e.g. John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newUserPhone">Phone Number</Label>
+                    <Input id="newUserPhone" placeholder="e.g. +91 98765 43210" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
+                  </div>
+                  <Button className="w-full" onClick={handleCreateUser}>Add User</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
