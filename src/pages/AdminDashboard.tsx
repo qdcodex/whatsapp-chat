@@ -46,6 +46,30 @@ const AdminDashboard = () => {
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [forwardMsg, setForwardMsg] = useState<import('@/types').Message | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+
+  const handleCreateUser = () => {
+    if (!newUserName.trim()) { toast.error('Name is required'); return; }
+    if (!newUserPhone.trim()) { toast.error('Phone number is required'); return; }
+    const existing = users.find(u => u.phone === newUserPhone.trim());
+    if (existing) { toast.error('A user with this phone already exists'); return; }
+    const user = createUser({
+      username: newUserPhone.trim(),
+      password: Math.random().toString(36).slice(2, 10),
+      role: 'user',
+      displayName: newUserName.trim(),
+      phone: newUserPhone.trim(),
+      workspaceId: workspaceId!,
+      adminId: currentUser!.id,
+    });
+    setNewUserName('');
+    setNewUserPhone('');
+    setCreateUserOpen(false);
+    toast.success(`${user.displayName} added`);
+    openDM(user.id);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
