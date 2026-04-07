@@ -196,9 +196,32 @@ const UserDashboard = () => {
             />
             <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || 'Messages'}</h1>
           </div>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg" onClick={() => { logout(); navigate('/'); }}>
-            <LogOut className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
+                  <UserPlus className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
+                <DialogHeader><DialogTitle>Add New Contact</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newContactName">Display Name</Label>
+                    <Input id="newContactName" placeholder="e.g. John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newContactPhone">Phone Number</Label>
+                    <Input id="newContactPhone" placeholder="e.g. +91 98765 43210" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
+                  </div>
+                  <Button className="w-full" onClick={handleCreateContact}>Add Contact</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg" onClick={() => { logout(); navigate('/'); }}>
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
