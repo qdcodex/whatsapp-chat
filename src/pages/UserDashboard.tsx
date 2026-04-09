@@ -151,12 +151,12 @@ const UserDashboard = () => {
         text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
-    } else {
+    } else if (isDMChat && dmTargetId) {
       sendMessage({
         adminId: currentUser.adminId!,
         workspaceId: slug,
         senderId: currentUser.id,
-        recipientId: currentUser.adminId!,
+        recipientId: dmTargetId,
         text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
