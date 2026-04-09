@@ -95,10 +95,21 @@ const UserDashboard = () => {
   const slug = workspace?.slug || '';
   const groups = getUserGroups(currentUser.id);
   const admin = getUserById(currentUser.adminId!);
+  const { getUsersByAdmin } = useAuthStore();
+  const peerContacts = getUsersByAdmin(currentUser.adminId!).filter(
+    (u) => u.id !== currentUser.id
+  );
+
+  const dmTargetId = isDMChatView(chatView) ? chatView.userId : '';
+  const dmTarget = dmTargetId ? getUserById(dmTargetId) : null;
+
+  function isDMChatView(cv: ChatView): cv is { type: 'dm'; userId: string } {
+    return typeof cv === 'object' && cv.type === 'dm';
+  }
 
   const getActiveMessages = () => {
-    if (typeof chatView === 'object' && chatView.type === 'dm') {
-      return getDMMessages(slug, currentUser.id, currentUser.adminId!);
+    if (isDMChatView(chatView) && chatView.userId) {
+      return getDMMessages(slug, currentUser.id, chatView.userId);
     }
     if (typeof chatView === 'object' && chatView.type === 'group') {
       return getGroupMessages(chatView.groupId);
@@ -107,15 +118,15 @@ const UserDashboard = () => {
   };
 
   const activeMessages = getActiveMessages();
-  const isDMChat = typeof chatView === 'object' && chatView.type === 'dm';
+  const isDMChat = isDMChatView(chatView);
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
   const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
 
   const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
   if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
-  const adminOnline = checkOnline(currentUser.adminId!);
-  const adminTyping = checkTyping(currentUser.adminId!, slug);
+  const dmTargetOnline = dmTargetId ? checkOnline(dmTargetId) : false;
+  const dmTargetTyping = dmTargetId ? checkTyping(dmTargetId, slug) : false;
 
   const isChatEnabled = (() => {
     if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
@@ -140,12 +151,12 @@ const UserDashboard = () => {
         text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
-    } else {
+    } else if (isDMChat && dmTargetId) {
       sendMessage({
         adminId: currentUser.adminId!,
         workspaceId: slug,
         senderId: currentUser.id,
-        recipientId: currentUser.adminId!,
+        recipientId: dmTargetId,
         text, imageUrl, audioUrl, audioDuration,
         ...replyData,
       });
@@ -245,7 +256,7 @@ const UserDashboard = () => {
             return (
               <button
                 onClick={() => { setChatView({ type: 'dm', userId: currentUser.adminId! }); setShowSidebar(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isDMChat ? 'bg-secondary' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isDMChat && dmTargetId === currentUser.adminId ? 'bg-secondary' : ''}`}
               >
                 <ProfileAvatar
                   userId={currentUser.adminId!}
@@ -253,7 +264,7 @@ const UserDashboard = () => {
                   avatar={admin?.avatar}
                   size="md"
                   showOnlineStatus
-                  isOnline={adminOnline}
+                  isOnline={checkOnline(currentUser.adminId!)}
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
@@ -334,6 +345,58 @@ const UserDashboard = () => {
               </div>
             );
           })}
+
+          {/* Contacts */}
+          {peerContacts.length > 0 && (
+            <div className="px-4 py-2.5">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Contacts</p>
+            </div>
+          )}
+          {peerContacts.map((contact) => {
+            const isActive = isDMChat && dmTargetId === contact.id;
+            const contactDmMsgs = getDMMessages(slug, currentUser.id, contact.id);
+            const lastMsg = contactDmMsgs[contactDmMsgs.length - 1];
+            const contactUnread = getUnreadDMCount(slug, currentUser.id, contact.id);
+            const contactOnline = checkOnline(contact.id);
+            return (
+              <button
+                key={contact.id}
+                onClick={() => { setChatView({ type: 'dm', userId: contact.id }); setShowSidebar(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isActive ? 'bg-secondary' : ''}`}
+              >
+                <ProfileAvatar
+                  userId={contact.id}
+                  displayName={contact.displayName || contact.username}
+                  avatar={contact.avatar}
+                  size="md"
+                  showOnlineStatus
+                  isOnline={contactOnline}
+                />
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-[15px] text-foreground truncate">{contact.displayName || contact.username}</p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {lastMsg && (
+                        <span className={`text-[11px] ${contactUnread > 0 ? 'text-wa-unread font-medium' : 'text-muted-foreground'}`}>
+                          {format(new Date(lastMsg.timestamp), 'h:mm a')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[13px] text-muted-foreground truncate">
+                      {lastMsg
+                        ? lastMsg.audioUrl ? '🎤 Voice message'
+                          : lastMsg.imageUrl ? '📷 Photo'
+                          : lastMsg.text || 'Tap to chat'
+                        : 'Tap to chat'}
+                    </p>
+                    <UnreadBadge count={contactUnread} />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -350,19 +413,19 @@ const UserDashboard = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            {isDMChat ? (
+            {isDMChat && dmTarget ? (
               <>
                 <ProfileAvatar
-                  userId={currentUser.adminId!}
-                  displayName={admin?.displayName || 'Admin'}
-                  avatar={admin?.avatar}
+                  userId={dmTargetId}
+                  displayName={dmTarget.displayName || 'User'}
+                  avatar={dmTarget.avatar}
                   size="sm"
                   showOnlineStatus
-                  isOnline={adminOnline}
+                  isOnline={dmTargetOnline}
                 />
                 <div className="min-w-0">
-                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{admin?.displayName || 'Admin'}</p>
-                  <OnlineStatus isOnline={adminOnline} size="sm" />
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{dmTarget.displayName || 'User'}</p>
+                  <OnlineStatus isOnline={dmTargetOnline} size="sm" />
                 </div>
               </>
             ) : activeGroup ? (
@@ -401,7 +464,7 @@ const UserDashboard = () => {
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
           }}
         />
-        {isDMChat && adminTyping && <TypingIndicator name={admin?.displayName || 'Admin'} />}
+        {isDMChat && dmTargetTyping && <TypingIndicator name={dmTarget?.displayName || 'User'} />}
         {(() => {
           if (isDMChat) return isChatEnabled;
           if (isGroupChat && activeGroup) return !isMemberMuted(activeGroup.id, currentUser.id);
