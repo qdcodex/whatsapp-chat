@@ -345,6 +345,58 @@ const UserDashboard = () => {
               </div>
             );
           })}
+
+          {/* Contacts */}
+          {peerContacts.length > 0 && (
+            <div className="px-4 py-2.5">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Contacts</p>
+            </div>
+          )}
+          {peerContacts.map((contact) => {
+            const isActive = isDMChat && dmTargetId === contact.id;
+            const contactDmMsgs = getDMMessages(slug, currentUser.id, contact.id);
+            const lastMsg = contactDmMsgs[contactDmMsgs.length - 1];
+            const contactUnread = getUnreadDMCount(slug, currentUser.id, contact.id);
+            const contactOnline = checkOnline(contact.id);
+            return (
+              <button
+                key={contact.id}
+                onClick={() => { setChatView({ type: 'dm', userId: contact.id }); setShowSidebar(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-secondary/60 transition-colors border-b border-border/30 ${isActive ? 'bg-secondary' : ''}`}
+              >
+                <ProfileAvatar
+                  userId={contact.id}
+                  displayName={contact.displayName || contact.username}
+                  avatar={contact.avatar}
+                  size="md"
+                  showOnlineStatus
+                  isOnline={contactOnline}
+                />
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-[15px] text-foreground truncate">{contact.displayName || contact.username}</p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {lastMsg && (
+                        <span className={`text-[11px] ${contactUnread > 0 ? 'text-wa-unread font-medium' : 'text-muted-foreground'}`}>
+                          {format(new Date(lastMsg.timestamp), 'h:mm a')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[13px] text-muted-foreground truncate">
+                      {lastMsg
+                        ? lastMsg.audioUrl ? '🎤 Voice message'
+                          : lastMsg.imageUrl ? '📷 Photo'
+                          : lastMsg.text || 'Tap to chat'
+                        : 'Tap to chat'}
+                    </p>
+                    <UnreadBadge count={contactUnread} />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
