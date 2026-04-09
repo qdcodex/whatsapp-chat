@@ -95,10 +95,21 @@ const UserDashboard = () => {
   const slug = workspace?.slug || '';
   const groups = getUserGroups(currentUser.id);
   const admin = getUserById(currentUser.adminId!);
+  const { getUsersByAdmin } = useAuthStore();
+  const peerContacts = getUsersByAdmin(currentUser.adminId!).filter(
+    (u) => u.id !== currentUser.id
+  );
+
+  const dmTargetId = isDMChatView(chatView) ? chatView.userId : '';
+  const dmTarget = dmTargetId ? getUserById(dmTargetId) : null;
+
+  function isDMChatView(cv: ChatView): cv is { type: 'dm'; userId: string } {
+    return typeof cv === 'object' && cv.type === 'dm';
+  }
 
   const getActiveMessages = () => {
-    if (typeof chatView === 'object' && chatView.type === 'dm') {
-      return getDMMessages(slug, currentUser.id, currentUser.adminId!);
+    if (isDMChatView(chatView) && chatView.userId) {
+      return getDMMessages(slug, currentUser.id, chatView.userId);
     }
     if (typeof chatView === 'object' && chatView.type === 'group') {
       return getGroupMessages(chatView.groupId);
@@ -107,15 +118,15 @@ const UserDashboard = () => {
   };
 
   const activeMessages = getActiveMessages();
-  const isDMChat = typeof chatView === 'object' && chatView.type === 'dm';
+  const isDMChat = isDMChatView(chatView);
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
   const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
 
   const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
   if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
-  const adminOnline = checkOnline(currentUser.adminId!);
-  const adminTyping = checkTyping(currentUser.adminId!, slug);
+  const dmTargetOnline = dmTargetId ? checkOnline(dmTargetId) : false;
+  const dmTargetTyping = dmTargetId ? checkTyping(dmTargetId, slug) : false;
 
   const isChatEnabled = (() => {
     if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
