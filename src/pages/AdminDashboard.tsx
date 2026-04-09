@@ -36,7 +36,7 @@ const AdminDashboard = () => {
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser } = useAuthStore();
   const { sendMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat } = useWorkspaceStore();
-  const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping } = usePresenceStore();
+  const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
 
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
@@ -143,8 +143,15 @@ const AdminDashboard = () => {
   };
 
   const handleTyping = () => {
-    setTyping(currentUser.id, workspaceId!);
-    setTimeout(() => clearTyping(currentUser.id, workspaceId!), 3000);
+    const isDM = typeof chatView === 'object' && chatView.type === 'dm';
+    if (isDM) {
+      const targetId = (chatView as { type: 'dm'; userId: string }).userId;
+      setTypingDM(currentUser.id, targetId);
+      setTimeout(() => clearTypingDM(currentUser.id, targetId), 3000);
+    } else {
+      setTyping(currentUser.id, workspaceId!);
+      setTimeout(() => clearTyping(currentUser.id, workspaceId!), 3000);
+    }
   };
 
   const isUserChatEnabled = (user: User) => {
@@ -435,7 +442,7 @@ const AdminDashboard = () => {
           onForward={(msg) => setForwardMsg(msg)}
         />
 
-        {typeof chatView === 'object' && chatView.type === 'dm' && checkTyping(chatView.userId, workspaceId!) && (
+        {typeof chatView === 'object' && chatView.type === 'dm' && checkTypingDM(chatView.userId, currentUser.id) && (
           <TypingIndicator name={activeDMUser?.displayName || 'User'} />
         )}
 
