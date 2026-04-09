@@ -27,7 +27,7 @@ const UserDashboard = () => {
   const { currentUser, logout, getUserById, getMaskedPhone, createUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
-  const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping } = usePresenceStore();
+  const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
   const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
@@ -126,7 +126,7 @@ const UserDashboard = () => {
   if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
   const dmTargetOnline = dmTargetId ? checkOnline(dmTargetId) : false;
-  const dmTargetTyping = dmTargetId ? checkTyping(dmTargetId, slug) : false;
+  const dmTargetTyping = dmTargetId ? checkTypingDM(dmTargetId, currentUser.id) : false;
 
   const isChatEnabled = (() => {
     if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
@@ -165,8 +165,13 @@ const UserDashboard = () => {
   };
 
   const handleTyping = () => {
-    setTyping(currentUser.id, slug);
-    setTimeout(() => clearTyping(currentUser.id, slug), 3000);
+    if (isDMChat && dmTargetId) {
+      setTypingDM(currentUser.id, dmTargetId);
+      setTimeout(() => clearTypingDM(currentUser.id, dmTargetId), 3000);
+    } else {
+      setTyping(currentUser.id, slug);
+      setTimeout(() => clearTyping(currentUser.id, slug), 3000);
+    }
   };
 
   const handleInviteContacts = (groupId: string, contacts: ContactEntry[]) => {
