@@ -264,7 +264,7 @@ const UserDashboard = () => {
                   avatar={admin?.avatar}
                   size="md"
                   showOnlineStatus
-                  isOnline={adminOnline}
+                  isOnline={checkOnline(currentUser.adminId!)}
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
@@ -361,19 +361,19 @@ const UserDashboard = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            {isDMChat ? (
+            {isDMChat && dmTarget ? (
               <>
                 <ProfileAvatar
-                  userId={currentUser.adminId!}
-                  displayName={admin?.displayName || 'Admin'}
-                  avatar={admin?.avatar}
+                  userId={dmTargetId}
+                  displayName={dmTarget.displayName || 'User'}
+                  avatar={dmTarget.avatar}
                   size="sm"
                   showOnlineStatus
-                  isOnline={adminOnline}
+                  isOnline={dmTargetOnline}
                 />
                 <div className="min-w-0">
-                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{admin?.displayName || 'Admin'}</p>
-                  <OnlineStatus isOnline={adminOnline} size="sm" />
+                  <p className="font-medium text-[15px] text-wa-header-fg truncate">{dmTarget.displayName || 'User'}</p>
+                  <OnlineStatus isOnline={dmTargetOnline} size="sm" />
                 </div>
               </>
             ) : activeGroup ? (
@@ -412,7 +412,7 @@ const UserDashboard = () => {
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
           }}
         />
-        {isDMChat && adminTyping && <TypingIndicator name={admin?.displayName || 'Admin'} />}
+        {isDMChat && dmTargetTyping && <TypingIndicator name={dmTarget?.displayName || 'User'} />}
         {(() => {
           if (isDMChat) return isChatEnabled;
           if (isGroupChat && activeGroup) return !isMemberMuted(activeGroup.id, currentUser.id);
