@@ -3,12 +3,20 @@ import { format } from 'date-fns';
 import type { Message } from '@/types';
 import AudioPlayer from './AudioPlayer';
 import ReadReceipt from './ReadReceipt';
-import { Reply, Forward, CornerUpRight } from 'lucide-react';
+import { Reply, Forward, CornerUpRight, Trash2, MoreVertical } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface MessageBubbleProps {
   message: Message;
   isOutgoing?: boolean;
+  currentUserId?: string;
   senderName?: string;
   senderPhone?: string;
   senderAvatar?: string;
@@ -16,11 +24,13 @@ interface MessageBubbleProps {
   channelLabel?: string;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
+  onDelete?: (message: Message, mode: 'for_me' | 'for_everyone') => void;
 }
 
 const MessageBubble = ({
   message,
   isOutgoing = false,
+  currentUserId,
   senderName,
   senderPhone,
   senderAvatar,
@@ -28,6 +38,7 @@ const MessageBubble = ({
   channelLabel,
   onReply,
   onForward,
+  onDelete,
 }: MessageBubbleProps) => {
   const [showActions, setShowActions] = useState(false);
   const touchStartX = useRef(0);
@@ -56,6 +67,20 @@ const MessageBubble = ({
     }
     setSwipeOffset(0);
   };
+
+  // Show "This message was deleted" placeholder
+  if (message.deletedForEveryone) {
+    return (
+      <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'} mb-1 px-2`}>
+        <div className={`max-w-[85%] sm:max-w-[65%] rounded-lg px-3 py-2 border border-dashed ${isOutgoing ? 'border-chat-bubble-out/60 bg-chat-bubble-out/30' : 'border-border bg-secondary/30'}`}>
+          <p className="text-[13px] italic text-muted-foreground flex items-center gap-1.5">
+            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+            {isOutgoing ? 'You deleted this message' : 'This message was deleted'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -186,31 +211,70 @@ const MessageBubble = ({
           {format(new Date(message.timestamp), 'h:mm a')}
           {isOutgoing && <ReadReceipt status={message.status} />}
         </p>
-
-        {/* Hover actions (desktop) */}
-        {showActions && (onReply || onForward) && (
-          <div className={`absolute top-1 ${isOutgoing ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1'} flex items-center gap-0.5`}>
-            {onReply && (
-              <button
-                onClick={() => onReply(message)}
-                className="w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors shadow-sm"
-                title="Reply"
-              >
-                <Reply className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
-            {onForward && (
-              <button
-                onClick={() => onForward(message)}
-                className="w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors shadow-sm"
-                title="Forward"
-              >
-                <Forward className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Hover actions (desktop) */}
+      {showActions && (onReply || onForward || onDelete) && (
+        <div className={`absolute top-1 ${isOutgoing ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1'} flex items-center gap-0.5`}>
+          {onReply && (
+            <button
+              onClick={() => onReply(message)}
+              className="w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors shadow-sm"
+              title="Reply"
+            >
+              <Reply className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
+          {onForward && (
+            <button
+              onClick={() => onForward(message)}
+              className="w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors shadow-sm"
+              title="Forward"
+            >
+              <Forward className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
+          {onDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors shadow-sm"
+                  title="More options"
+                >
+                  <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isOutgoing ? 'end' : 'start'} className="min-w-[160px]">
+                {onReply && (
+                  <DropdownMenuItem onClick={() => onReply(message)}>
+                    <Reply className="w-4 h-4 mr-2" /> Reply
+                  </DropdownMenuItem>
+                )}
+                {onForward && (
+                  <DropdownMenuItem onClick={() => onForward(message)}>
+                    <Forward className="w-4 h-4 mr-2" /> Forward
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(message, 'for_me')}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete for me
+                </DropdownMenuItem>
+                {isOutgoing && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(message, 'for_everyone')}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete for everyone
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
     </div>
   );
 };

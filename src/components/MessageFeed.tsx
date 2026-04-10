@@ -15,6 +15,7 @@ interface MessageFeedProps {
   showUserDetails?: boolean;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
+  onDelete?: (message: Message, mode: 'for_me' | 'for_everyone') => void;
 }
 
 const MessageFeed = ({
@@ -29,6 +30,7 @@ const MessageFeed = ({
   showUserDetails = false,
   onReply,
   onForward,
+  onDelete,
 }: MessageFeedProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -71,8 +73,10 @@ const MessageFeed = ({
           senderAvatar={getSenderAvatar ? getSenderAvatar(msg.senderId) : undefined}
           showUserDetails={showUserDetails}
           channelLabel={getChannelLabel ? getChannelLabel(msg) : undefined}
+          currentUserId={currentUserId}
           onReply={onReply}
           onForward={onForward}
+          onDelete={onDelete}
         />
       ))}
       <div ref={bottomRef} />

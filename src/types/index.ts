@@ -38,6 +38,8 @@ export interface Message {
     senderName: string;
     originalTimestamp: number;
   };
+  deletedFor?: string[];       // user IDs who deleted this for themselves
+  deletedForEveryone?: boolean; // deleted for all participants
 }
 
 export interface Group {
@@ -62,13 +64,58 @@ export interface JoinRequest {
   createdAt: number;
 }
 
+export interface GroupCreationRequest {
+  id: string;
+  adminId: string;
+  adminName: string;
+  workspaceId: string;
+  groupName: string;
+  description?: string;
+  memberIds: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+}
+
 export interface Workspace {
   id: string;
   slug: string;
   name: string;
   adminId: string;
   createdAt: number;
-  globalChatEnabled?: boolean;
+  globalChatEnabled?: boolean;  // users can reply to admin
+  messagingEnabled?: boolean;    // admin can send messages (super admin toggle)
+  autoDeleteMessages?: boolean;
+  autoDeleteDays?: number; // default 7
+}
+
+export interface PaymentNotification {
+  id: string;
+  adminId: string;
+  adminName: string;
+  workspaceId: string;
+  message: string;
+  amount?: number;
+  read: boolean;
+  createdAt: number;
+}
+
+export interface PaymentRecord {
+  id: string;
+  paidAt: number;
+  amount: number;
+  note?: string;
+}
+
+export interface AdminSubscription {
+  adminId: string;
+  adminName: string;
+  workspaceId: string;
+  monthlyAmount: number;    // amount in currency units, set by super admin
+  billingCycleDays?: number; // default 28, editable by super admin per admin
+  lastPaidAt?: number;      // timestamp of last payment
+  nextDueAt?: number;       // lastPaidAt + billingCycleDays (ms)
+  history: PaymentRecord[];
+  paymentActive?: boolean;  // super admin can start/stop payment requirement
 }
 
 export type ChatView = 'broadcast' | { type: 'dm'; userId: string } | { type: 'group'; groupId: string };

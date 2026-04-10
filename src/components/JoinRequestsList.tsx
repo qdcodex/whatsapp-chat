@@ -19,9 +19,9 @@ const JoinRequestsList = ({ workspaceId }: JoinRequestsListProps) => {
 
   if (allRequests.length === 0) return null;
 
-  const handleApprove = (request: typeof allRequests[0]) => {
+  const handleApprove = async (request: typeof allRequests[0]) => {
     // Create user account and add to group
-    const newUser = createUser({
+    const newUser = await createUser({
       username: request.name.toLowerCase().replace(/\s+/g, '') + Math.random().toString(36).substring(2, 5),
       password: Math.random().toString(36).substring(2, 10),
       role: 'user',
@@ -52,7 +52,7 @@ const JoinRequestsList = ({ workspaceId }: JoinRequestsListProps) => {
               {req.phone && ` • ${req.phone}`}
             </p>
             {req.message && (
-              <p className="text-xs text-muted-foreground mt-0.5 italic">"{req.message}"</p>
+              <p className="text-xs text-muted-foreground mt-0.5 italic">&ldquo;{req.message}&rdquo;</p>
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
