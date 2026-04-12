@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { User } from '@/types';
 
 interface AuthState {
@@ -23,7 +24,9 @@ interface AuthState {
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
   currentUser: null,
   users: [],
   isInitialized: false,
@@ -116,4 +119,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       body: JSON.stringify(patch),
     });
   },
-}));
+}),
+    {
+      name: 'broadcast-session',
+      partialize: (state) => ({ currentUser: state.currentUser }),
+    }
+  )
+);

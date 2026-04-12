@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface PresenceState {
   onlineUsers: Record<string, number>; // userId -> lastHeartbeat timestamp
@@ -16,7 +17,9 @@ interface PresenceState {
   isTypingDM: (userId: string, targetId: string) => boolean;
 }
 
-export const usePresenceStore = create<PresenceState>()((set, get) => ({
+export const usePresenceStore = create<PresenceState>()(
+  persist(
+    (set, get) => ({
   onlineUsers: {},
   typingUsers: {},
   typingInDM: {},
@@ -64,4 +67,7 @@ export const usePresenceStore = create<PresenceState>()((set, get) => ({
     const ts = get().typingInDM[`${userId}-${targetId}`];
     return !!ts && Date.now() - ts < 3000;
   },
-}));
+}),
+    { name: 'broadcast-presence' }
+  )
+);

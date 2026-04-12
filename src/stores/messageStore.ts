@@ -28,6 +28,7 @@ interface MessageState {
   getUnreadDMCount: (workspaceId: string, currentUserId: string, otherUserId: string) => number;
   getUnreadGroupCount: (groupId: string, currentUserId: string) => number;
   getUnreadBroadcastCount: (workspaceId: string, currentUserId: string) => number;
+  refreshMessages: (workspaceId: string) => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -156,4 +157,16 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       m.workspaceId === workspaceId && !m.recipientId && !m.groupId &&
       m.senderId !== currentUserId && m.status !== 'read' && !m.deletedForEveryone
     ).length,
+
+  refreshMessages: async (workspaceId) => {
+    const res = await fetch(`/api/messages?workspaceId=${workspaceId}`);
+    if (!res.ok) return;
+    const fresh: Message[] = await res.json();
+    set(s => ({
+      messages: [
+        ...s.messages.filter(m => m.workspaceId !== workspaceId),
+        ...fresh,
+      ],
+    }));
+  },
 }));

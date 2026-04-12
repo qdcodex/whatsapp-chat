@@ -27,7 +27,7 @@ import type { ChatView } from '@/types';
 const UserDashboard = () => {
   const router = useRouter();
   const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin } = useAuthStore();
-  const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
+  const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
   const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
@@ -89,6 +89,17 @@ const UserDashboard = () => {
         return prev;
       });
     }
+  }, [currentUser?.adminId]);
+
+  useEffect(() => {
+    if (!currentUser?.adminId) return;
+    const workspace = getWorkspaceByAdmin(currentUser.adminId);
+    const slug = workspace?.slug;
+    if (!slug) return;
+    const interval = setInterval(() => {
+      refreshMessages(slug);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [currentUser?.adminId]);
 
   if (!currentUser || currentUser.role !== 'user') return null;
