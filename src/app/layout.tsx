@@ -3,7 +3,7 @@ import "@/index.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "BroadcastHub",
+  title: "Chathub",
   description: "Simple. Reliable. Private.",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   themeColor: "#075e54",
   width: "device-width",
   initialScale: 1,
-  maximumScale:1,
+  maximumScale: 1,
   userScalable: false,
 };
 
