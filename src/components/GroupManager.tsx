@@ -11,6 +11,9 @@ import { Label } from '@/components/ui/label';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -38,6 +41,11 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
+  const [deleteGroupName, setDeleteGroupName] = useState<string>('');
+  const [removeMemberId, setRemoveMemberId] = useState<string | null>(null);
+  const [removeMemberName, setRemoveMemberName] = useState<string>('');
+  const [removeGroupId, setRemoveGroupId] = useState<string | null>(null);
 
   const groups = getGroupsByWorkspace(workspaceId);
   const existingGroupCount = adminGroupCount(adminId);
@@ -231,7 +239,7 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-destructive"
-                    onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); toast.success('Group deleted'); }}
+                    onClick={(e) => { e.stopPropagation(); setDeleteGroupId(group.id); setDeleteGroupName(group.name); }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -269,7 +277,7 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-destructive"
-                          onClick={() => { removeMember(group.id, memberId); toast.success('Member removed'); }}
+                          onClick={() => { setRemoveMemberId(memberId); setRemoveMemberName(member.displayName); setRemoveGroupId(group.id); }}
                         >
                           <UserMinus className="w-3 h-3" />
                         </Button>
@@ -282,6 +290,59 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
           );
         })
       )}
+
+      <AlertDialog open={deleteGroupId !== null} onOpenChange={(open) => { if (!open) setDeleteGroupId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{deleteGroupName}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteGroupId) {
+                  deleteGroup(deleteGroupId);
+                  toast.success('Group deleted');
+                  setDeleteGroupId(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={removeMemberId !== null} onOpenChange={(open) => { if (!open) setRemoveMemberId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove &quot;{removeMemberName}&quot; from this group?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (removeMemberId && removeGroupId) {
+                  removeMember(removeGroupId, removeMemberId);
+                  toast.success('Member removed');
+                  setRemoveMemberId(null);
+                  setRemoveGroupId(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

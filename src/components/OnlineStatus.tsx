@@ -24,8 +24,7 @@ const OnlineStatus = ({ isOnline, lastSeen, showLabel = true, size = 'sm' }: Onl
 
   return (
     <span className={cn(
-      'text-xs',
-      isOnline ? 'text-wa-header-fg/80' : 'text-muted-foreground'
+      'text-xs text-white'
     )}>
       {getLabel()}
     </span>

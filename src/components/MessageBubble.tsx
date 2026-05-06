@@ -12,6 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface MessageBubbleProps {
   message: Message;
@@ -41,6 +44,7 @@ const MessageBubble = ({
   onDelete,
 }: MessageBubbleProps) => {
   const [showActions, setShowActions] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<'for_me' | 'for_everyone' | null>(null);
   const touchStartX = useRef(0);
   const touchCurrentX = useRef(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -258,14 +262,14 @@ const MessageBubble = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={() => onDelete(message, 'for_me')}
+                  onClick={() => setDeleteConfirm('for_me')}
                 >
                   <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                 </DropdownMenuItem>
                 {isOutgoing && (
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onClick={() => onDelete(message, 'for_everyone')}
+                    onClick={() => setDeleteConfirm('for_everyone')}
                   >
                     <Trash2 className="w-4 h-4 mr-2" /> Delete for everyone
                   </DropdownMenuItem>
@@ -275,6 +279,31 @@ const MessageBubble = ({
           )}
         </div>
       )}
+
+      <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirm === 'for_me' ? 'Delete this message for you?' : 'Delete this message for everyone?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteConfirm && onDelete) {
+                  onDelete(message, deleteConfirm);
+                  setDeleteConfirm(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

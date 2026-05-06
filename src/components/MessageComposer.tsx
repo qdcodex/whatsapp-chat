@@ -65,6 +65,11 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
     setText('');
     setImagePreview(null);
     setShowEmoji(false);
+    if (textareaRef.current) {
+      textareaRef.current.value = '';
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = '36px';
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -253,7 +258,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
               onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
               placeholder="Type a message"
               rows={1}
-              className="flex-1 resize-none bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground max-h-[120px] min-h-[36px]"
+              className="flex-1 resize-none bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground max-h-[120px] min-h-[36px] scrollbar-hide"
             />
 
             <Button

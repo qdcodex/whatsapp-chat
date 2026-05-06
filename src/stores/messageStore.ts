@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Message, MessageStatus } from '@/types';
+import { broadcastChannelSync } from '@/lib/broadcastChannelSync';
 
 const isNotExpired = (timestamp: number, days: number) =>
   Date.now() - timestamp < days * 24 * 60 * 60 * 1000;
@@ -29,6 +30,10 @@ interface MessageState {
   getUnreadGroupCount: (groupId: string, currentUserId: string) => number;
   getUnreadBroadcastCount: (workspaceId: string, currentUserId: string) => number;
   refreshMessages: (workspaceId: string) => Promise<void>;
+  initializeRealTime: (userId: string, workspaceId: string) => () => void;
+  handleRemoteMessage: (message: Message) => void;
+  handleRemoteStatusUpdate: (update: { messageId: string; status: MessageStatus }) => void;
+  handleRemoteDelete: (data: { messageId: string; deletedForEveryone?: boolean; deletedFor?: string }) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -168,5 +173,55 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
         ...fresh,
       ],
     }));
+  },
+
+  initializeRealTime: (userId, workspaceId) => {
+    broadcastChannelSync.initialize();
+
+    broadcastChannelSync.onMessageSync((event) => {
+      if (event.action === 'add') {
+        get().handleRemoteMessage(event.data);
+      } else if (event.action === 'update') {
+        get().handleRemoteStatusUpdate(event.data);
+      } else if (event.action === 'delete') {
+        get().handleRemoteDelete(event.data);
+      }
+    });
+
+    const pollInterval = setInterval(() => {
+      get().refreshMessages(workspaceId);
+    }, 500);
+
+    return () => clearInterval(pollInterval);
+  },
+
+  handleRemoteMessage: (message) => {
+    set(s => {
+      const exists = s.messages.find(m => m.id === message.id);
+      if (exists) return s;
+      return { messages: [...s.messages, message] };
+    });
+    broadcastChannelSync.broadcastMessage('add', message);
+  },
+
+  handleRemoteStatusUpdate: (update) => {
+    set(s => ({
+      messages: s.messages.map(m =>
+        m.id === update.messageId ? { ...m, status: update.status } : m
+      ),
+    }));
+    broadcastChannelSync.broadcastMessage('update', update);
+  },
+
+  handleRemoteDelete: (data) => {
+    set(s => ({
+      messages: s.messages.map(m => {
+        if (m.id !== data.messageId) return m;
+        if (data.deletedForEveryone) return { ...m, deletedForEveryone: true };
+        if (data.deletedFor) return { ...m, deletedFor: [...(m.deletedFor || []), data.deletedFor] };
+        return m;
+      }),
+    }));
+    broadcastChannelSync.broadcastMessage('delete', data);
   },
 }));

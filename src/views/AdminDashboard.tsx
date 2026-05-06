@@ -30,6 +30,9 @@ import { Label } from '@/components/ui/label';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { ChatView, User, Message } from '@/types';
@@ -37,7 +40,7 @@ import type { ChatView, User, Message } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams() as { workspaceId: string };
   const router = useRouter();
-  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser } = useAuthStore();
+  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
@@ -56,6 +59,9 @@ const AdminDashboard = () => {
   const [newUserName, setNewUserName] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [autoDeleteDaysInput, setAutoDeleteDaysInput] = useState('7');
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState<string>('');
+  const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
 
   const handleCreateUser = async () => {
     if (!newUserName.trim()) { toast.error('Name is required'); return; }
@@ -78,6 +84,18 @@ const AdminDashboard = () => {
     openDM(user.id);
   };
 
+  const handleUpdateDisplayName = async () => {
+    if (!editingDisplayName.trim()) { toast.error('Display name cannot be empty'); return; }
+    if (editingDisplayName === currentUser?.displayName) { toast.success('No changes made'); return; }
+    try {
+      await updateUser(currentUser!.id, { displayName: editingDisplayName.trim() });
+      toast.success('Display name updated');
+      setSettingsOpen(false);
+    } catch (error) {
+      toast.error('Failed to update display name');
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -96,6 +114,18 @@ const AdminDashboard = () => {
       router.replace('/');
     }
   }, [currentUser, workspaceId, router]);
+
+  useEffect(() => {
+    if (!currentUser || !workspaceId) return;
+
+    const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, workspaceId);
+    const presenceCleanup = usePresenceStore.getState().initializeRealTime(currentUser.id, workspaceId);
+
+    return () => {
+      messageCleanup?.();
+      presenceCleanup?.();
+    };
+  }, [currentUser?.id, workspaceId]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -246,8 +276,24 @@ const AdminDashboard = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md max-h-[85dvh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Chat Settings</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
                 <div className="space-y-4">
+                  {/* Edit Display Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="editDisplayName" className="text-sm font-medium">Display Name</Label>
+                    <Input
+                      id="editDisplayName"
+                      type="text"
+                      value={editingDisplayName}
+                      onChange={(e) => setEditingDisplayName(e.target.value)}
+                      placeholder="Enter your display name"
+                      className="h-10"
+                    />
+                    <Button onClick={handleUpdateDisplayName} className="w-full" size="sm">Save Display Name</Button>
+                  </div>
+
+                  <div className="h-px bg-border" />
+
                   {/* Allow replies */}
                   <div className="flex items-center justify-between p-3 bg-secondary rounded-xl">
                     <div>
@@ -552,7 +598,7 @@ const AdminDashboard = () => {
                 variant="ghost"
                 size="icon"
                 className="text-wa-header-fg/60 hover:bg-wa-teal-dark hover:text-destructive h-8 w-8"
-                onClick={() => { deleteUser(activeDMUser.id); setChatView({ type: 'dm', userId: '' }); toast.success('User removed'); }}
+                onClick={() => { setDeleteUserConfirm(activeDMUser.id); setDeleteUserName(activeDMUser.displayName); }}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -618,6 +664,33 @@ const AdminDashboard = () => {
           adminId={currentUser.id}
         />
       </div>
+
+      <AlertDialog open={deleteUserConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteUserConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove &quot;{deleteUserName}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteUserConfirm) {
+                  deleteUser(deleteUserConfirm);
+                  setChatView({ type: 'dm', userId: '' });
+                  toast.success('User removed');
+                  setDeleteUserConfirm(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { MessageCircle, Lock, User, Phone, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Lock, User, Phone, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,13 +17,19 @@ const Login = () => {
   const [otpStep, setOtpStep] = useState<'phone' | 'otp'>('phone');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const login = useAuthStore((s) => s.login);
   const loginByPhone = useAuthStore((s) => s.loginByPhone);
   const currentUser = useAuthStore((s) => s.currentUser);
   const users = useAuthStore((s) => s.users);
+  const initialize = useAuthStore((s) => s.initialize);
   const router = useRouter();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   useEffect(() => {
     if (currentUser) {
@@ -116,7 +122,23 @@ const Login = () => {
                 <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" className="pl-10 h-12 rounded-lg" required />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="pl-10 pr-10 h-12 rounded-lg"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
               <Button type="submit" className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">Sign In</Button>

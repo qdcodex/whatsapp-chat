@@ -12,21 +12,21 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LogOut, Users, ArrowLeft, Search, UserPlus } from 'lucide-react';
+import { LogOut, Users, ArrowLeft, Search, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const router = useRouter();
-  const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin } = useAuthStore();
+  const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
@@ -36,28 +36,19 @@ const UserDashboard = () => {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [, setTick] = useState(0);
-  const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserPhone, setNewUserPhone] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
 
-  const handleCreateContact = async () => {
-    if (!newUserName.trim()) { toast.error('Name is required'); return; }
-    if (!newUserPhone.trim()) { toast.error('Phone number is required'); return; }
-    const existing = getUserById(newUserPhone.trim());
-    if (existing) { toast.error('A user with this phone already exists'); return; }
-    const user = await createUser({
-      username: newUserPhone.trim(),
-      password: Math.random().toString(36).slice(2, 10),
-      role: 'user',
-      displayName: newUserName.trim(),
-      phone: newUserPhone.trim(),
-      workspaceId: slug,
-      adminId: currentUser!.adminId!,
-    });
-    setNewUserName('');
-    setNewUserPhone('');
-    setCreateUserOpen(false);
-    toast.success(`${user.displayName} added as contact`);
+  const handleUpdateDisplayName = async () => {
+    if (!editingDisplayName.trim()) { toast.error('Display name cannot be empty'); return; }
+    if (editingDisplayName === currentUser?.displayName) { toast.success('No changes made'); return; }
+    try {
+      await updateUser(currentUser!.id, { displayName: editingDisplayName.trim() });
+      toast.success('Display name updated');
+      setSettingsOpen(false);
+    } catch (error) {
+      toast.error('Failed to update display name');
+    }
   };
 
   useEffect(() => {
@@ -73,6 +64,18 @@ const UserDashboard = () => {
     const ticker = setInterval(() => setTick((t) => t + 1), 2000);
     return () => { clearInterval(heartbeat); clearInterval(ticker); };
   }, [currentUser, setOnline]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, currentUser.adminId!);
+    const presenceCleanup = usePresenceStore.getState().initializeRealTime(currentUser.id, currentUser.adminId!);
+
+    return () => {
+      messageCleanup?.();
+      presenceCleanup?.();
+    };
+  }, [currentUser?.id, currentUser?.adminId]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'user') {
@@ -225,24 +228,28 @@ const UserDashboard = () => {
             <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || 'Messages'}</h1>
           </div>
           <div className="flex items-center gap-0.5">
-            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
-                  <UserPlus className="w-5 h-5" />
+                  <Settings className="w-5 h-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
-                <DialogHeader><DialogTitle>Add New Contact</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
                 <div className="space-y-4">
+                  {/* Edit Display Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="newContactName">Display Name</Label>
-                    <Input id="newContactName" placeholder="e.g. John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                    <Label htmlFor="editDisplayName" className="text-sm font-medium">Display Name</Label>
+                    <Input
+                      id="editDisplayName"
+                      type="text"
+                      value={editingDisplayName}
+                      onChange={(e) => setEditingDisplayName(e.target.value)}
+                      placeholder="Enter your display name"
+                      className="h-10"
+                    />
+                    <Button onClick={handleUpdateDisplayName} className="w-full" size="sm">Save Display Name</Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newContactPhone">Phone Number</Label>
-                    <Input id="newContactPhone" placeholder="e.g. +91 98765 43210" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
-                  </div>
-                  <Button className="w-full" onClick={handleCreateContact}>Add Contact</Button>
                 </div>
               </DialogContent>
             </Dialog>
