@@ -5,6 +5,7 @@ class SocketClient {
   private userId: string = '';
   private workspaceId: string = '';
   private listeners: Map<string, Set<Function>> = new Map();
+  private typingTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   connect(userId: string, workspaceId: string) {
     if (this.socket?.connected) return this.socket;
@@ -22,11 +23,12 @@ class SocketClient {
     });
 
     this.socket.on('connect', () => {
-      this.emit('user:online');
-      this.notifyListeners('connected');
+      console.log('Socket connected:', this.socket?.id);
+      this.notifyListeners('connected', { userId, socketId: this.socket?.id });
     });
 
     this.socket.on('disconnect', () => {
+      console.log('Socket disconnected');
       this.notifyListeners('disconnected');
     });
 
@@ -68,7 +70,43 @@ class SocketClient {
   emit(event: string, data?: any) {
     if (this.socket?.connected) {
       this.socket.emit(event, data);
+    } else {
+      console.warn(`Socket not connected. Cannot emit ${event}`);
     }
+  }
+
+  // Typing indicator with debounce
+  startTyping(targetId?: string, groupId?: string) {
+    this.emit('user:typing-start', { targetId, groupId });
+  }
+
+  stopTyping(targetId?: string, groupId?: string) {
+    this.emit('user:typing-stop', { targetId, groupId });
+  }
+
+  // Debounced typing (auto-stops after inactivity)
+  setTypingWithDebounce(targetId?: string, groupId?: string) {
+    const key = groupId ? `group:${groupId}` : `user:${targetId}`;
+
+    // Clear existing timeout
+    if (this.typingTimeouts.has(key)) {
+      clearTimeout(this.typingTimeouts.get(key)!);
+    }
+
+    // Send typing start
+    this.startTyping(targetId, groupId);
+
+    // Auto-stop after 3 seconds of inactivity
+    const timeout = setTimeout(() => {
+      this.stopTyping(targetId, groupId);
+      this.typingTimeouts.delete(key);
+    }, 3000);
+
+    this.typingTimeouts.set(key, timeout);
+  }
+
+  requestOnlineUsers() {
+    this.emit('request:online-users');
   }
 
   private notifyListeners(event: string, data?: any) {
@@ -83,6 +121,10 @@ class SocketClient {
 
   getSocket(): Socket | null {
     return this.socket;
+  }
+
+  getSocketId(): string | null {
+    return this.socket?.id || null;
   }
 }
 

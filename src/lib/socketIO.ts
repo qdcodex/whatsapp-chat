@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 
 let io: SocketIOServer | null = null;
+const userSockets = new Map<string, string[]>(); // userId -> socketIds[]
 
 export function getSocketIOInstance(): SocketIOServer {
   if (!io) {
@@ -17,7 +18,7 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     cors: {
       origin: process.env.NODE_ENV === 'production'
         ? (origin, callback) => callback(null, true)
-        : 'http://localhost:3000',
+        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
       credentials: true,
     },
     transports: ['websocket', 'polling'],
@@ -30,15 +31,32 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     const workspaceId = socket.handshake.query.workspaceId as string;
 
     if (!userId || !workspaceId) {
+      console.log('Missing userId or workspaceId');
       socket.disconnect();
       return;
     }
 
+    // Track this socket for the user
+    if (!userSockets.has(userId)) {
+      userSockets.set(userId, []);
+    }
+    userSockets.get(userId)?.push(socket.id);
+
     socket.join(`user:${userId}`);
     socket.join(`workspace:${workspaceId}`);
 
-    socket.emit('connected', { userId, workspaceId });
+    console.log(`User ${userId} connected to workspace ${workspaceId}`);
 
+    socket.emit('connected', { userId, workspaceId, socketId: socket.id });
+
+    // Notify others that user is online
+    io?.to(`workspace:${workspaceId}`).emit('user:online', {
+      userId,
+      timestamp: Date.now(),
+      socketId: socket.id,
+    });
+
+    // Message events
     socket.on('message:send', (data) => {
       io?.to(`workspace:${workspaceId}`).emit('message:new', data);
     });
@@ -51,32 +69,106 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       io?.to(`workspace:${workspaceId}`).emit('message:deleted', data);
     });
 
-    socket.on('user:online', () => {
-      io?.to(`workspace:${workspaceId}`).emit('user:online', { userId, timestamp: Date.now() });
-    });
+    // Typing indicators with auto-stop timeout
+    const typingTimeouts = new Map<string, NodeJS.Timeout>();
 
     socket.on('user:typing-start', (data) => {
       const { targetId, groupId } = data;
+
+      // Clear existing timeout
+      const timeoutKey = groupId ? `group:${groupId}` : `user:${targetId}`;
+      if (typingTimeouts.has(timeoutKey)) {
+        clearTimeout(typingTimeouts.get(timeoutKey)!);
+      }
+
+      // Broadcast typing start
       if (targetId) {
-        io?.to(`user:${targetId}`).emit('user:typing-start', { userId, targetId });
+        io?.to(`user:${targetId}`).emit('user:typing-start', {
+          userId,
+          targetId,
+          timestamp: Date.now(),
+        });
       }
       if (groupId) {
-        io?.to(`group:${groupId}`).emit('user:typing-start', { userId, groupId });
+        io?.to(`group:${groupId}`).emit('user:typing-start', {
+          userId,
+          groupId,
+          timestamp: Date.now(),
+        });
       }
+
+      // Auto-stop typing after 10 seconds of inactivity
+      const timeout = setTimeout(() => {
+        if (targetId) {
+          io?.to(`user:${targetId}`).emit('user:typing-stop', {
+            userId,
+            targetId,
+            timestamp: Date.now(),
+          });
+        }
+        if (groupId) {
+          io?.to(`group:${groupId}`).emit('user:typing-stop', {
+            userId,
+            groupId,
+            timestamp: Date.now(),
+          });
+        }
+        typingTimeouts.delete(timeoutKey);
+      }, 10000);
+
+      typingTimeouts.set(timeoutKey, timeout);
     });
 
     socket.on('user:typing-stop', (data) => {
       const { targetId, groupId } = data;
+      const timeoutKey = groupId ? `group:${groupId}` : `user:${targetId}`;
+
+      // Clear timeout
+      if (typingTimeouts.has(timeoutKey)) {
+        clearTimeout(typingTimeouts.get(timeoutKey)!);
+        typingTimeouts.delete(timeoutKey);
+      }
+
       if (targetId) {
-        io?.to(`user:${targetId}`).emit('user:typing-stop', { userId, targetId });
+        io?.to(`user:${targetId}`).emit('user:typing-stop', {
+          userId,
+          targetId,
+          timestamp: Date.now(),
+        });
       }
       if (groupId) {
-        io?.to(`group:${groupId}`).emit('user:typing-stop', { userId, groupId });
+        io?.to(`group:${groupId}`).emit('user:typing-stop', {
+          userId,
+          groupId,
+          timestamp: Date.now(),
+        });
       }
     });
 
+    // Sync online status on demand
+    socket.on('request:online-users', () => {
+      const onlineUsers = Array.from(userSockets.keys());
+      socket.emit('online-users', { onlineUsers, timestamp: Date.now() });
+    });
+
     socket.on('disconnect', () => {
-      io?.to(`workspace:${workspaceId}`).emit('user:offline', { userId, timestamp: Date.now() });
+      // Remove socket from user tracking
+      const sockets = userSockets.get(userId);
+      if (sockets) {
+        const index = sockets.indexOf(socket.id);
+        if (index > -1) {
+          sockets.splice(index, 1);
+        }
+        if (sockets.length === 0) {
+          userSockets.delete(userId);
+          // Notify others that user is completely offline
+          io?.to(`workspace:${workspaceId}`).emit('user:offline', {
+            userId,
+            timestamp: Date.now(),
+          });
+        }
+      }
+      console.log(`User ${userId} disconnected`);
     });
   });
 
@@ -90,4 +182,8 @@ export function broadcastMessage(event: string, data: any, room?: string) {
   } else {
     io.emit(event, data);
   }
+}
+
+export function isUserOnline(userId: string): boolean {
+  return userSockets.has(userId) && (userSockets.get(userId)?.length ?? 0) > 0;
 }
