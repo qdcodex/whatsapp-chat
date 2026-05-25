@@ -11,6 +11,9 @@ export function useSocket({ userId, workspaceId }: UseSocketOptions) {
   const [socketError, setSocketError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Don't connect until we have both userId and workspaceId — avoids
+    // spamming the server with empty-credential connections before login.
+    if (!userId || !workspaceId) return;
     if (isConnectingRef.current) return;
     isConnectingRef.current = true;
 
