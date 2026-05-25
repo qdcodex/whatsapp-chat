@@ -16,6 +16,10 @@ dist-ssr
 .next
 .next/
 
+# Lock file duplicates — keep only bun.lock
+bun.lockb
+package-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
