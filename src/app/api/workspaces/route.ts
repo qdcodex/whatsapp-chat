@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, withDB } from '@/lib/mongodb';
 import { WorkspaceModel } from '@/lib/models/Workspace';
 
 export async function GET() {
-  await connectDB();
-  const workspaces = await WorkspaceModel.find().lean().exec();
-  return NextResponse.json(workspaces);
+  return withDB(async () => {
+    await connectDB();
+    const workspaces = await WorkspaceModel.find().lean().exec();
+    return NextResponse.json(workspaces);
+  });
 }
 
 export async function POST(req: NextRequest) {
-  await connectDB();
-  const data = await req.json();
-  const workspace = await WorkspaceModel.create(data);
-  return NextResponse.json(workspace.toJSON(), { status: 201 });
+  return withDB(async () => {
+    await connectDB();
+    const data = await req.json();
+    const workspace = await WorkspaceModel.create(data);
+    return NextResponse.json(workspace.toJSON(), { status: 201 });
+  });
 }

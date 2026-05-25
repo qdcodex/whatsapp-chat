@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -23,4 +24,22 @@ export async function connectDB() {
   const conn = await mongoose.connect(uri);
   global._mongooseConn = conn.connection;
   return global._mongooseConn;
+}
+
+/**
+ * Wraps an API route handler with try/catch so MongoDB errors return a proper
+ * JSON { error } response instead of an empty 500 ("Unexpected end of JSON input").
+ * The actual error message is logged server-side and returned in the response
+ * so Railway logs and the browser both show what went wrong.
+ */
+export async function withDB(
+  handler: () => Promise<NextResponse>
+): Promise<NextResponse> {
+  try {
+    return await handler();
+  } catch (err: any) {
+    const message = err?.message ?? String(err);
+    console.error('[DB Error]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
