@@ -74,17 +74,28 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
 
   const handleSend = () => {
     if (!text.trim() && !imagePreview) return;
-    onSend(text.trim() || undefined, imagePreview || undefined);
+    const msgText = text.trim() || undefined;
+    const msgImage = imagePreview || undefined;
+
+    // Blur FIRST — commits any pending mobile IME / predictive-text composition
+    // so the browser doesn't restore the old value after React clears the state
+    textareaRef.current?.blur();
+
+    onSend(msgText, msgImage);
     setText('');
     setImagePreview(null);
     setShowEmoji(false);
+
     if (textareaRef.current) {
-      textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = '36px';
-      textareaRef.current.focus(); // Auto-focus for next message
     }
-    // Trigger callback to clear typing indicator
+
+    // Refocus after React has committed the cleared value to the DOM
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+
     if (onSendComplete) {
       setTimeout(() => onSendComplete?.(), 100);
     }

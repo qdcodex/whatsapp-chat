@@ -109,6 +109,15 @@ export function useOnlineStatus({
     // Also try immediately in case socket is already connected
     emit('request:online-users');
 
+    // On mobile PWA: re-request when the app comes back to the foreground
+    // (socket may have reconnected while backgrounded)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        emit('request:online-users');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       unsubOnline();
       unsubOffline();
@@ -116,6 +125,7 @@ export function useOnlineStatus({
       unsubTypingStop();
       unsubOnlineUsers();
       unsubConnected();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled, userId, workspaceId, on, emit]);
 
