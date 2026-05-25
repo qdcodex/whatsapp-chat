@@ -1,33 +1,75 @@
 {
   "name": "BroadcastHub",
-  "short_name": "BroadcastHub",
-  "description": "Simple. Reliable. Private.",
+  "short_name": "Hub",
+  "description": "Simple. Reliable. Private. Real-time messaging with broadcast and group support.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#000000",
   "theme_color": "#075e54",
   "orientation": "portrait-primary",
+  "scope": "/",
   "categories": ["communication", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Open Chats",
+      "short_name": "Chats",
+      "description": "View your recent conversations",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "icons": [
+    {
+      "src": "/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
+      "src": "/icon-540x720.png",
+      "sizes": "540x720",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "BroadcastHub messaging interface"
+    },
+    {
+      "src": "/icon-1280x720.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "BroadcastHub desktop view"
     }
   ]
 }

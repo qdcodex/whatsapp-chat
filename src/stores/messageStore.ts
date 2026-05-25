@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Message, MessageStatus } from '@/types';
 import { broadcastChannelSync } from '@/lib/broadcastChannelSync';
+import { socketClient } from '@/lib/socketClient';
 
 const isNotExpired = (timestamp: number, days: number) =>
   Date.now() - timestamp < days * 24 * 60 * 60 * 1000;
@@ -79,23 +80,41 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
 
   deleteMessage: (messageId, userId, mode) => {
     if (mode === 'for_everyone') {
-      set(s => ({ messages: s.messages.map(m => m.id === messageId ? { ...m, deletedForEveryone: true } : m) }));
+      // Update local state immediately
+      set(s => ({
+        messages: s.messages.map(m =>
+          m.id === messageId ? { ...m, deletedForEveryone: true } : m
+        ),
+      }));
+      // Persist to DB
       fetch(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deletedForEveryone: true }),
       });
+      // Broadcast via socket so ALL other users see it deleted instantly
+      socketClient.emit('message:delete', {
+        messageId,
+        deletedForEveryone: true,
+      });
+      // Sync other tabs on same device
+      broadcastChannelSync.broadcastMessage('delete', { messageId, deletedForEveryone: true });
     } else {
+      // "Delete for me" — only this user's view, no socket broadcast needed
       set(s => ({
         messages: s.messages.map(m =>
-          m.id === messageId ? { ...m, deletedFor: [...(m.deletedFor || []), userId] } : m
+          m.id === messageId
+            ? { ...m, deletedFor: [...(m.deletedFor || []), userId] }
+            : m
         ),
       }));
       fetch(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ $push: { deletedFor: userId } }),
+        body: JSON.stringify({ deletedFor: userId }),
       });
+      // Sync other tabs on same device
+      broadcastChannelSync.broadcastMessage('delete', { messageId, deletedFor: userId });
     }
   },
 
@@ -188,11 +207,33 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       }
     });
 
+    // Listen for real-time delete from other users via socket
+    socketClient.on('message:deleted', (data: { messageId: string; deletedForEveryone?: boolean; deletedFor?: string }) => {
+      get().handleRemoteDelete(data);
+    });
+
+    // Listen for new messages from other users via socket
+    socketClient.on('message:new', (data: Message) => {
+      get().handleRemoteMessage(data);
+    });
+
+    // Only refresh on page visibility change, not constantly
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        get().refreshMessages(workspaceId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Manual refresh every 30 seconds (not 500ms!)
     const pollInterval = setInterval(() => {
       get().refreshMessages(workspaceId);
-    }, 500);
+    }, 30000);
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   },
 
   handleRemoteMessage: (message) => {

@@ -11,9 +11,10 @@ interface MessageComposerProps {
   onTyping?: () => void;
   replyingTo?: { message: Message; senderName: string } | null;
   onCancelReply?: () => void;
+  onSendComplete?: () => void;
 }
 
-const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: MessageComposerProps) => {
+const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendComplete }: MessageComposerProps) => {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -38,6 +39,18 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Prevent body scroll when emoji picker is open
+  useEffect(() => {
+    if (showEmoji) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showEmoji]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -69,19 +82,19 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
       textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = '36px';
+      textareaRef.current.focus(); // Auto-focus for next message
+    }
+    // Trigger callback to clear typing indicator
+    if (onSendComplete) {
+      setTimeout(() => onSendComplete?.(), 100);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
 
   const onEmojiSelect = (emoji: { native: string }) => {
     setText((prev) => prev + emoji.native);
     textareaRef.current?.focus();
+    setShowEmoji(false); // Close emoji picker after selection
   };
 
   const startRecording = useCallback(async () => {
@@ -150,11 +163,38 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
 
   return (
     <div className="bg-wa-sidebar-header px-2 py-1.5 relative safe-area-bottom">
-      {/* Emoji Picker */}
+      {/* Emoji Picker - Full Width Modal */}
       {showEmoji && (
-        <div ref={emojiRef} className="absolute bottom-full left-0 sm:left-2 mb-2 z-50 shadow-xl rounded-xl overflow-hidden max-w-[calc(100vw-16px)]">
-          <Picker data={data} onEmojiSelect={onEmojiSelect} theme="light" previewPosition="none" skinTonePosition="none" maxFrequentRows={2} perLine={7} />
-        </div>
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/20"
+            onClick={() => setShowEmoji(false)}
+          />
+          {/* Emoji Picker Modal */}
+          <div ref={emojiRef} className="fixed bottom-0 left-0 right-0 z-50 shadow-2xl rounded-t-3xl overflow-hidden bg-white dark:bg-slate-950 max-h-[70vh] border-t border-border">
+            <div className="flex flex-col h-full">
+              {/* Handle Bar */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-12 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+              </div>
+              {/* Emoji Picker */}
+              <div className="flex-1 overflow-y-auto px-2">
+                <Picker
+                  data={data}
+                  onEmojiSelect={onEmojiSelect}
+                  theme="light"
+                  previewPosition="none"
+                  skinTonePosition="none"
+                  maxFrequentRows={2}
+                  perLine={8}
+                  width="100%"
+                  height="100%"
+                />
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Attachment Menu */}
@@ -253,12 +293,42 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply }: Messag
             <textarea
               ref={textareaRef}
               value={text}
-              onChange={(e) => { setText(e.target.value); onTyping?.(); }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => { setShowEmoji(false); setShowAttach(false); }}
-              placeholder="Type a message"
+              onChange={(e) => {
+                setText(e.target.value);
+                onTyping?.();
+              }}
+              onKeyDown={(e) => {
+                // Ctrl/Cmd + Enter to send, Enter for new line
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSend();
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              onFocus={() => {
+                setShowEmoji(false);
+                setShowAttach(false);
+              }}
+              onPaste={(e) => {
+                // Handle image paste
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                  if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onloadend = () => setImagePreview(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }
+              }}
+              placeholder="Type a message..."
               rows={1}
-              className="flex-1 resize-none bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground max-h-[120px] min-h-[36px] scrollbar-hide"
+              className="flex-1 resize-none bg-transparent py-2.5 px-0.5 text-sm outline-none placeholder:text-muted-foreground max-h-[120px] min-h-[36px] scrollbar-hide"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
             />
 
             <Button

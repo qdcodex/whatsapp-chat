@@ -5,7 +5,9 @@
       "Bash(node_modules/.bin/next --version)",
       "Bash(npm run:*)",
       "Bash(npx tsc:*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "mcp__Claude_Preview__preview_start",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
     ]
   }
 }

@@ -13,7 +13,12 @@ class SocketClient {
     this.userId = userId;
     this.workspaceId = workspaceId;
 
-    this.socket = io({
+    // Determine socket URL explicitly
+    const socketUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000');
+
+    this.socket = io(socketUrl, {
       query: { userId, workspaceId },
       reconnection: true,
       reconnectionDelay: 1000,
@@ -84,23 +89,24 @@ class SocketClient {
     this.emit('user:typing-stop', { targetId, groupId });
   }
 
-  // Debounced typing (auto-stops after inactivity)
+  // Debounced typing (WhatsApp-like behavior)
+  // Sends immediately on first keystroke, then debounces subsequent updates
   setTypingWithDebounce(targetId?: string, groupId?: string) {
     const key = groupId ? `group:${groupId}` : `user:${targetId}`;
 
-    // Clear existing timeout
-    if (this.typingTimeouts.has(key)) {
+    // If no timeout exists, send typing-start immediately
+    if (!this.typingTimeouts.has(key)) {
+      this.startTyping(targetId, groupId);
+    } else {
+      // Clear existing timeout to extend the typing period
       clearTimeout(this.typingTimeouts.get(key)!);
     }
 
-    // Send typing start
-    this.startTyping(targetId, groupId);
-
-    // Auto-stop after 3 seconds of inactivity
+    // Auto-stop after 1 second of inactivity (much faster than before)
     const timeout = setTimeout(() => {
       this.stopTyping(targetId, groupId);
       this.typingTimeouts.delete(key);
-    }, 3000);
+    }, 1000);
 
     this.typingTimeouts.set(key, timeout);
   }

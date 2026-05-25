@@ -3,12 +3,12 @@ import "@/index.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Chathub",
+  title: "BroadcastHub",
   description: "Simple. Reliable. Private.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "BroadcastHub",
   },
   formatDetection: {
@@ -25,8 +25,9 @@ export const viewport: Viewport = {
   themeColor: "#075e54",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

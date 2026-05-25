@@ -8,6 +8,8 @@ import { format } from 'date-fns';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import { useGroupStore } from '@/stores/groupStore';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { socketClient } from '@/lib/socketClient';
 import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
@@ -27,9 +29,9 @@ import type { ChatView } from '@/types';
 const UserDashboard = () => {
   const router = useRouter();
   const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
-  const { getDMMessages, getGroupMessages, sendMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
+  const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
-  const { setOnline, isOnline: checkOnline, isTyping: checkTyping, setTyping, clearTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
+  const { setOnline } = usePresenceStore();
   const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
@@ -38,6 +40,17 @@ const UserDashboard = () => {
   const [, setTick] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
+
+  // Derive workspace slug early (needed for hooks below)
+  const _workspace = currentUser ? getWorkspaceByAdmin(currentUser.adminId!) : null;
+  const _slug = _workspace?.slug || '';
+
+  // Socket-based real-time presence — must be called unconditionally (Rules of Hooks)
+  const { isUserOnline, isDMUserTyping, isGroupTyping, getGroupTypingUsers } = useOnlineStatus({
+    userId: currentUser?.id || '',
+    workspaceId: _slug,
+    enabled: !!_slug && !!currentUser,
+  });
 
   const handleUpdateDisplayName = async () => {
     if (!editingDisplayName.trim()) { toast.error('Display name cannot be empty'); return; }
@@ -110,6 +123,7 @@ const UserDashboard = () => {
   const workspace = getWorkspaceByAdmin(currentUser.adminId!);
   const slug = workspace?.slug || '';
   const groups = getUserGroups(currentUser.id);
+
   const admin = getUserById(currentUser.adminId!);
   const peerContacts = getUsersByAdmin(currentUser.adminId!).filter(
     (u) => u.id !== currentUser.id
@@ -140,8 +154,12 @@ const UserDashboard = () => {
   const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
   if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
-  const dmTargetOnline = dmTargetId ? checkOnline(dmTargetId) : false;
-  const dmTargetTyping = dmTargetId ? checkTypingDM(dmTargetId, currentUser.id) : false;
+  // Use socket-based presence (works across different devices/users)
+  const dmTargetOnline = dmTargetId ? isUserOnline(dmTargetId) : false;
+  const dmTargetTyping = dmTargetId ? isDMUserTyping(dmTargetId) : false;
+  const activeGroupId = isGroupChat ? (chatView as { type: 'group'; groupId: string }).groupId : null;
+  const groupTyping = activeGroupId ? isGroupTyping(activeGroupId) : false;
+  const groupTypingUserIds = activeGroupId ? getGroupTypingUsers(activeGroupId) : [];
 
   const isChatEnabled = (() => {
     if (currentUser.chatEnabled !== undefined) return currentUser.chatEnabled;
@@ -179,13 +197,24 @@ const UserDashboard = () => {
     setReplyingTo(null);
   };
 
+  const handleDelete = (msg: import('@/types').Message, mode: 'for_me' | 'for_everyone') => {
+    // Only allow "delete for everyone" if this user sent the message
+    if (mode === 'for_everyone' && msg.senderId !== currentUser.id) {
+      toast.error("You can only delete your own messages for everyone");
+      return;
+    }
+    deleteMessage(msg.id, currentUser.id, mode);
+    toast.success(
+      mode === 'for_everyone' ? 'Message deleted for everyone' : 'Message deleted'
+    );
+  };
+
   const handleTyping = () => {
+    // Emit typing event via socket so OTHER users actually see the indicator
     if (isDMChat && dmTargetId) {
-      setTypingDM(currentUser.id, dmTargetId);
-      setTimeout(() => clearTypingDM(currentUser.id, dmTargetId), 3000);
-    } else {
-      setTyping(currentUser.id, slug);
-      setTimeout(() => clearTyping(currentUser.id, slug), 3000);
+      socketClient.setTypingWithDebounce(dmTargetId, undefined);
+    } else if (isGroupChat && activeGroupId) {
+      socketClient.setTypingWithDebounce(undefined, activeGroupId);
     }
   };
 
@@ -288,7 +317,7 @@ const UserDashboard = () => {
                   avatar={admin?.avatar}
                   size="md"
                   showOnlineStatus
-                  isOnline={checkOnline(currentUser.adminId!)}
+                  isOnline={isUserOnline(currentUser.adminId!)}
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
@@ -381,7 +410,7 @@ const UserDashboard = () => {
             const contactDmMsgs = getDMMessages(slug, currentUser.id, contact.id);
             const lastMsg = contactDmMsgs[contactDmMsgs.length - 1];
             const contactUnread = getUnreadDMCount(slug, currentUser.id, contact.id);
-            const contactOnline = checkOnline(contact.id);
+            const contactOnline = isUserOnline(contact.id);
             return (
               <button
                 key={contact.id}
@@ -487,8 +516,24 @@ const UserDashboard = () => {
             const u = getUserById(msg.senderId);
             setReplyingTo({ message: msg, senderName: u?.displayName || 'Unknown' });
           }}
+          onDelete={handleDelete}
         />
-        {isDMChat && dmTargetTyping && <TypingIndicator name={dmTarget?.displayName || 'User'} />}
+        {/* DM typing indicator */}
+        {isDMChat && dmTargetTyping && (
+          <TypingIndicator name={dmTarget?.displayName || 'User'} />
+        )}
+        {/* Group typing indicator */}
+        {isGroupChat && groupTyping && (
+          <TypingIndicator
+            name={
+              groupTypingUserIds.length === 1
+                ? (getUserById(groupTypingUserIds[0])?.displayName || 'Someone')
+                : groupTypingUserIds.length > 1
+                ? `${groupTypingUserIds.length} people`
+                : 'Someone'
+            }
+          />
+        )}
         {(() => {
           if (isDMChat) return isChatEnabled;
           if (isGroupChat && activeGroup) return !isMemberMuted(activeGroup.id, currentUser.id);

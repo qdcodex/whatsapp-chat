@@ -161,8 +161,51 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
   }
+
+  /* Message bubble long-press feedback */
+  .bubble-pressing {
+    filter: brightness(0.88);
+    transform: scale(0.96);
+    transition: filter 0.1s ease, transform 0.1s ease;
+  }
+
+  /* line-clamp for sheet preview */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Safe area insets for notched/rounded devices */
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+  }
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+  }
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left, 1rem));
+  }
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right, 1rem));
+  }
+  .safe-area-all {
+    padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    padding-left: max(1rem, env(safe-area-inset-left, 1rem));
+    padding-right: max(1rem, env(safe-area-inset-right, 1rem));
+  }
+
+  /* Prevent content shift when scrollbar appears */
+  html {
+    overflow-y: scroll;
+  }
+
+  /* Fix iOS viewport height */
+  body, html {
+    height: 100%;
+    height: 100dvh;
   }
 }
 
@@ -170,5 +213,43 @@
 @media (hover: none) {
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* Apple's recommended minimum touch target */
+    min-width: 44px;
   }
+
+  /* Prevent zoom on input focus in iOS */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Fix iOS keyboard overlap */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Typing indicator animation */
+.typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
 }

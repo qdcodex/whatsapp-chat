@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { socketClient } from '@/lib/socketClient';
 
 interface UseSocketOptions {
@@ -8,6 +8,7 @@ interface UseSocketOptions {
 
 export function useSocket({ userId, workspaceId }: UseSocketOptions) {
   const isConnectingRef = useRef(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isConnectingRef.current) return;
@@ -44,8 +45,26 @@ export function useSocket({ userId, workspaceId }: UseSocketOptions) {
     []
   );
 
+  // Listen for socket errors
+  useEffect(() => {
+    const unsubscribe = on('error', (error: any) => {
+      const message = error?.message || 'Socket connection error';
+      setSocketError(message);
+      console.error('Socket error:', message);
+      // Auto-clear error after 5 seconds
+      const timeout = setTimeout(() => setSocketError(null), 5000);
+      return () => clearTimeout(timeout);
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [on]);
+
   return {
     isConnected: socketClient.isConnected(),
+    socketError,
     on,
     emit,
     startTyping,

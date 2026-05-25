@@ -4,7 +4,7 @@ import next from 'next';
 import { initializeSocketIO } from './src/lib/socketIO';
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = dev ? 'localhost' : '0.0.0.0';   // 0.0.0.0 required for Railway
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });

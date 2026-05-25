@@ -16,9 +16,20 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
 
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NODE_ENV === 'production'
-        ? (origin, callback) => callback(null, true)
-        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          process.env.SOCKET_IO_CORS_ORIGIN,
+        ].filter(Boolean);
+
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`CORS rejected origin: ${origin}`);
+          callback(new Error('CORS not allowed'));
+        }
+      },
       credentials: true,
     },
     transports: ['websocket', 'polling'],
@@ -81,7 +92,7 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
         clearTimeout(typingTimeouts.get(timeoutKey)!);
       }
 
-      // Broadcast typing start
+      // For DMs: send to target user's room
       if (targetId) {
         io?.to(`user:${targetId}`).emit('user:typing-start', {
           userId,
@@ -89,15 +100,18 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
           timestamp: Date.now(),
         });
       }
+      // For groups: send to workspace room (clients never join group rooms directly)
+      // Include groupId so clients can filter by active group
       if (groupId) {
-        io?.to(`group:${groupId}`).emit('user:typing-start', {
+        io?.to(`workspace:${workspaceId}`).emit('user:typing-start', {
           userId,
           groupId,
+          workspaceId,
           timestamp: Date.now(),
         });
       }
 
-      // Auto-stop typing after 10 seconds of inactivity
+      // Auto-stop after 3 seconds of inactivity (matches client debounce)
       const timeout = setTimeout(() => {
         if (targetId) {
           io?.to(`user:${targetId}`).emit('user:typing-stop', {
@@ -107,14 +121,15 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
           });
         }
         if (groupId) {
-          io?.to(`group:${groupId}`).emit('user:typing-stop', {
+          io?.to(`workspace:${workspaceId}`).emit('user:typing-stop', {
             userId,
             groupId,
+            workspaceId,
             timestamp: Date.now(),
           });
         }
         typingTimeouts.delete(timeoutKey);
-      }, 10000);
+      }, 3000);
 
       typingTimeouts.set(timeoutKey, timeout);
     });
@@ -137,9 +152,10 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
         });
       }
       if (groupId) {
-        io?.to(`group:${groupId}`).emit('user:typing-stop', {
+        io?.to(`workspace:${workspaceId}`).emit('user:typing-stop', {
           userId,
           groupId,
+          workspaceId,
           timestamp: Date.now(),
         });
       }
