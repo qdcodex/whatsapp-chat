@@ -6,7 +6,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   return withDB(async () => {
     const { id } = await params;
     await connectDB();
-    const user = await UserModel.findOne({ id } as any).lean().exec();
+    const user = await UserModel.findOne({ id }).lean().exec();
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(user);
   });
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     await connectDB();
     const data = await req.json();
-    const user = await UserModel.findOneAndUpdate({ id } as any, data as any, { new: true } as any).lean().exec();
+    const user = await UserModel.findOneAndUpdate({ id }, data, { returnDocument: 'after' as const }).lean().exec();
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(user);
   });
@@ -27,7 +27,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   return withDB(async () => {
     const { id } = await params;
     await connectDB();
-    await UserModel.deleteOne({ id } as any);
+    await UserModel.deleteOne({ id });
     return NextResponse.json({ ok: true });
   });
 }

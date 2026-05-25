@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -6,7 +6,19 @@ const transform = (_: unknown, ret: Record<string, unknown>) => {
   return ret;
 };
 
-const GroupSchema = new Schema({
+interface IGroup extends Document {
+  id: string;
+  name: string;
+  description?: string;
+  workspaceId: string;
+  adminId: string;
+  memberIds: string[];
+  mutedMemberIds?: string[];
+  slug: string;
+  createdAt: number;
+}
+
+const GroupSchema = new Schema<IGroup>({
   id:             { type: String, required: true, unique: true, index: true },
   name:           { type: String, required: true },
   description:    String,
@@ -18,4 +30,4 @@ const GroupSchema = new Schema({
   createdAt:      { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const GroupModel = models.Group || model('Group', GroupSchema);
+export const GroupModel = (models.Group || model<IGroup>('Group', GroupSchema)) as ReturnType<typeof model<IGroup>>;

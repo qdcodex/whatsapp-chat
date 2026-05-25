@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -6,7 +6,18 @@ const transform = (_: unknown, ret: Record<string, unknown>) => {
   return ret;
 };
 
-const PaymentNotificationSchema = new Schema({
+interface IPaymentNotification extends Document {
+  id: string;
+  adminId: string;
+  adminName: string;
+  workspaceId: string;
+  message: string;
+  amount?: number;
+  read: boolean;
+  createdAt: number;
+}
+
+const PaymentNotificationSchema = new Schema<IPaymentNotification>({
   id:          { type: String, required: true, unique: true, index: true },
   adminId:     { type: String, required: true, index: true },
   adminName:   { type: String, required: true },
@@ -17,4 +28,4 @@ const PaymentNotificationSchema = new Schema({
   createdAt:   { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const PaymentNotificationModel = models.PaymentNotification || model('PaymentNotification', PaymentNotificationSchema);
+export const PaymentNotificationModel = (models.PaymentNotification || model<IPaymentNotification>('PaymentNotification', PaymentNotificationSchema)) as ReturnType<typeof model<IPaymentNotification>>;

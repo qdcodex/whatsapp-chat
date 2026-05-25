@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   return withDB(async () => {
     await connectDB();
     const { ids } = await req.json();
-    await MessageModel.updateMany({ id: { $in: ids }, status: { $ne: 'read' } } as any, { status: 'read' } as any);
+    await MessageModel.updateMany({ id: { $in: ids }, status: { $ne: 'read' } }, { status: 'read' });
     return NextResponse.json({ ok: true });
   });
 }

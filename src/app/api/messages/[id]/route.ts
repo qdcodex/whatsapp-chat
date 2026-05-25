@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       update.$set = data;
     }
 
-    const msg = await MessageModel.findOneAndUpdate({ id } as any, update, { new: true } as any).lean().exec();
+    const msg = await MessageModel.findOneAndUpdate({ id }, update, { returnDocument: 'after' as const }).lean().exec();
     if (!msg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(msg);
   });
@@ -29,7 +29,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   return withDB(async () => {
     const { id } = await params;
     await connectDB();
-    await MessageModel.deleteOne({ id } as any);
+    await MessageModel.deleteOne({ id });
     return NextResponse.json({ ok: true });
   });
 }

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     await connectDB();
     const { userId } = await req.json();
-    const group = await GroupModel.findOne({ id } as any);
+    const group = await GroupModel.findOne({ id });
     if (!group) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (group.memberIds.length >= GROUP_MEMBER_LIMIT)
       return NextResponse.json({ error: `Group has reached the ${GROUP_MEMBER_LIMIT} member limit` }, { status: 400 });
@@ -27,9 +27,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await connectDB();
     const { userId } = await req.json();
     const group = await GroupModel.findOneAndUpdate(
-      { id } as any,
-      { $pull: { memberIds: userId } } as any,
-      { new: true } as any
+      { id },
+      { $pull: { memberIds: userId } },
+      { returnDocument: 'after' as const }
     ).lean().exec();
     if (!group) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(group);

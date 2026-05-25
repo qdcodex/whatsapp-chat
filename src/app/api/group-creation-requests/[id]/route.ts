@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await connectDB();
     const { status } = await req.json();
 
-    const gcr = await GroupCreationRequestModel.findOne({ id } as any);
+    const gcr = await GroupCreationRequestModel.findOne({ id });
     if (!gcr || gcr.status !== "pending")
       return NextResponse.json({ error: "Not found or already processed" }, { status: 404 });
 

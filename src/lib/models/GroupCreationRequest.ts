@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -6,7 +6,19 @@ const transform = (_: unknown, ret: Record<string, unknown>) => {
   return ret;
 };
 
-const GroupCreationRequestSchema = new Schema({
+interface IGroupCreationRequest extends Document {
+  id: string;
+  adminId: string;
+  adminName: string;
+  workspaceId: string;
+  groupName: string;
+  description?: string;
+  memberIds?: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+}
+
+const GroupCreationRequestSchema = new Schema<IGroupCreationRequest>({
   id:          { type: String, required: true, unique: true, index: true },
   adminId:     { type: String, required: true, index: true },
   adminName:   { type: String, required: true },
@@ -18,4 +30,4 @@ const GroupCreationRequestSchema = new Schema({
   createdAt:   { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const GroupCreationRequestModel = models.GroupCreationRequest || model('GroupCreationRequest', GroupCreationRequestSchema);
+export const GroupCreationRequestModel = (models.GroupCreationRequest || model<IGroupCreationRequest>('GroupCreationRequest', GroupCreationRequestSchema)) as ReturnType<typeof model<IGroupCreationRequest>>;

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { adminId, adminName, workspaceId, note } = await req.json();
 
     const now = Date.now();
-    const existing = await AdminSubscriptionModel.findOne({ adminId } as any);
+    const existing = await AdminSubscriptionModel.findOne({ adminId });
     const cycleDays = existing?.billingCycleDays ?? DEFAULT_BILLING_DAYS;
     const amount = existing?.monthlyAmount ?? 0;
     const nextDue = now + cycleDays * MS_PER_DAY;
@@ -21,13 +21,13 @@ export async function POST(req: NextRequest) {
     const record = { id: generateId(), paidAt: now, amount, note };
 
     const sub = await AdminSubscriptionModel.findOneAndUpdate(
-      { adminId } as any,
+      { adminId },
       {
         $set: { adminName, workspaceId, lastPaidAt: now, nextDueAt: nextDue },
         $push: { history: { $each: [record], $position: 0 } },
         $setOnInsert: { monthlyAmount: 0, billingCycleDays: DEFAULT_BILLING_DAYS, paymentActive: true },
-      } as any,
-      { upsert: true, new: true }
+      },
+      { upsert: true, returnDocument: 'after' as const }
     ).lean().exec();
 
     const notification = await PaymentNotificationModel.create({

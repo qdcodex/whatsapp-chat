@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const filter: Record<string, unknown> = {};
     if (searchParams.get('status')) filter.status = searchParams.get('status');
     if (searchParams.get('adminId')) filter.adminId = searchParams.get('adminId');
-    const requests = await GroupCreationRequestModel.find(filter as any).sort({ createdAt: -1 }).lean().exec();
+    const requests = await GroupCreationRequestModel.find(filter).sort({ createdAt: -1 }).lean().exec();
     return NextResponse.json(requests);
   });
 }

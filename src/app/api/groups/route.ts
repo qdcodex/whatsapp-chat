@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const filter: Record<string, unknown> = {};
     if (searchParams.get('workspaceId')) filter.workspaceId = searchParams.get('workspaceId');
     if (searchParams.get('adminId')) filter.adminId = searchParams.get('adminId');
-    const groups = await GroupModel.find(filter as any).lean().exec();
+    const groups = await GroupModel.find(filter).lean().exec();
     return NextResponse.json(groups);
   });
 }

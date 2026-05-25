@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (searchParams.get('workspaceId')) filter.workspaceId = searchParams.get('workspaceId');
     if (searchParams.get('groupId')) filter.groupId = searchParams.get('groupId');
     if (searchParams.get('adminId')) filter.adminId = searchParams.get('adminId');
-    const messages = await MessageModel.find(filter as any).sort({ timestamp: 1 }).lean().exec();
+    const messages = await MessageModel.find(filter).sort({ timestamp: 1 }).lean().exec();
     return NextResponse.json(messages);
   });
 }

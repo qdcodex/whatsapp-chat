@@ -7,9 +7,9 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     await connectDB();
     const notif = await PaymentNotificationModel.findOneAndUpdate(
-      { id } as any,
-      { read: true } as any,
-      { new: true } as any
+      { id },
+      { read: true },
+      { returnDocument: 'after' as const }
     ).lean().exec();
     if (!notif) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(notif);

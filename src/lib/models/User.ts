@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -6,7 +6,21 @@ const transform = (_: unknown, ret: Record<string, unknown>) => {
   return ret;
 };
 
-const UserSchema = new Schema({
+interface IUser extends Document {
+  id: string;
+  username: string;
+  password: string;
+  role: 'superadmin' | 'admin' | 'user';
+  displayName: string;
+  avatar?: string;
+  phone?: string;
+  workspaceId?: string;
+  adminId?: string;
+  createdAt: number;
+  chatEnabled?: boolean;
+}
+
+const UserSchema = new Schema<IUser>({
   id:              { type: String, required: true, unique: true, index: true },
   username:        { type: String, required: true, unique: true },
   password:        { type: String, required: true },
@@ -20,4 +34,4 @@ const UserSchema = new Schema({
   chatEnabled:     Boolean,
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const UserModel = models.User || model('User', UserSchema);
+export const UserModel = (models.User || model<IUser>('User', UserSchema)) as ReturnType<typeof model<IUser>>;

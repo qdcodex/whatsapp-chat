@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const data = await req.json();
     const sub = await AdminSubscriptionModel.findOneAndUpdate(
-      { adminId: data.adminId } as any,
-      { $setOnInsert: data } as any,
-      { upsert: true, new: true }
+      { adminId: data.adminId },
+      { $setOnInsert: data },
+      { upsert: true, returnDocument: 'after' as const }
     ).lean().exec();
     return NextResponse.json(sub, { status: 201 });
   });

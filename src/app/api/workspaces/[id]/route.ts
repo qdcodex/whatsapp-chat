@@ -6,7 +6,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   return withDB(async () => {
     const { id } = await params;
     await connectDB();
-    const ws = await WorkspaceModel.findOne({ id } as any).lean().exec();
+    const ws = await WorkspaceModel.findOne({ id }).lean().exec();
     if (!ws) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(ws);
   });
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     await connectDB();
     const data = await req.json();
-    const ws = await WorkspaceModel.findOneAndUpdate({ id } as any, data as any, { new: true } as any).lean().exec();
+    const ws = await WorkspaceModel.findOneAndUpdate({ id }, data, { returnDocument: 'after' as const }).lean().exec();
     if (!ws) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(ws);
   });
@@ -27,7 +27,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   return withDB(async () => {
     const { id } = await params;
     await connectDB();
-    await WorkspaceModel.deleteOne({ id } as any);
+    await WorkspaceModel.deleteOne({ id });
     return NextResponse.json({ ok: true });
   });
 }

@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -6,7 +6,19 @@ const transform = (_: unknown, ret: Record<string, unknown>) => {
   return ret;
 };
 
-const WorkspaceSchema = new Schema({
+interface IWorkspace extends Document {
+  id: string;
+  slug: string;
+  name: string;
+  adminId: string;
+  createdAt: number;
+  globalChatEnabled?: boolean;
+  messagingEnabled?: boolean;
+  autoDeleteMessages?: boolean;
+  autoDeleteDays?: number;
+}
+
+const WorkspaceSchema = new Schema<IWorkspace>({
   id:                 { type: String, required: true, unique: true, index: true },
   slug:               { type: String, required: true, unique: true },
   name:               { type: String, required: true },
@@ -18,4 +30,4 @@ const WorkspaceSchema = new Schema({
   autoDeleteDays:     { type: Number, default: 7 },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const WorkspaceModel = models.Workspace || model('Workspace', WorkspaceSchema);
+export const WorkspaceModel = (models.Workspace || model<IWorkspace>('Workspace', WorkspaceSchema)) as ReturnType<typeof model<IWorkspace>>;

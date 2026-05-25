@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     await connectDB();
     const data = await req.json();
-    const request = await JoinRequestModel.findOneAndUpdate({ id } as any, data as any, { new: true } as any).lean().exec();
+    const request = await JoinRequestModel.findOneAndUpdate({ id }, data, { returnDocument: 'after' as const }).lean().exec();
     if (!request) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(request);
   });

@@ -6,7 +6,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ adminI
   return withDB(async () => {
     const { adminId } = await params;
     await connectDB();
-    const sub = await AdminSubscriptionModel.findOne({ adminId } as any).lean().exec();
+    const sub = await AdminSubscriptionModel.findOne({ adminId }).lean().exec();
     if (!sub) return NextResponse.json(null);
     return NextResponse.json(sub);
   });
@@ -18,9 +18,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ad
     await connectDB();
     const data = await req.json();
     const sub = await AdminSubscriptionModel.findOneAndUpdate(
-      { adminId } as any,
-      data as any,
-      { new: true, upsert: true }
+      { adminId },
+      data,
+      { upsert: true, returnDocument: 'after' as const }
     ).lean().exec();
     return NextResponse.json(sub);
   });
