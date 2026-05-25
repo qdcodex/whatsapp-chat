@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -44,4 +44,4 @@ const AdminSubscriptionSchema = new Schema<IAdminSubscription>({
   paymentActive:    { type: Boolean, default: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const AdminSubscriptionModel = (models.AdminSubscription || model<IAdminSubscription>('AdminSubscription', AdminSubscriptionSchema)) as ReturnType<typeof model<IAdminSubscription>>;
+export const AdminSubscriptionModel = (models.AdminSubscription || model<IAdminSubscription>('AdminSubscription', AdminSubscriptionSchema)) as Model<IAdminSubscription>;

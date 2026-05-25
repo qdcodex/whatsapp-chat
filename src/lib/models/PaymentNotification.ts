@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -28,4 +28,4 @@ const PaymentNotificationSchema = new Schema<IPaymentNotification>({
   createdAt:   { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const PaymentNotificationModel = (models.PaymentNotification || model<IPaymentNotification>('PaymentNotification', PaymentNotificationSchema)) as ReturnType<typeof model<IPaymentNotification>>;
+export const PaymentNotificationModel = (models.PaymentNotification || model<IPaymentNotification>('PaymentNotification', PaymentNotificationSchema)) as Model<IPaymentNotification>;

@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -30,4 +30,4 @@ const GroupSchema = new Schema<IGroup>({
   createdAt:      { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const GroupModel = (models.Group || model<IGroup>('Group', GroupSchema)) as ReturnType<typeof model<IGroup>>;
+export const GroupModel = (models.Group || model<IGroup>('Group', GroupSchema)) as Model<IGroup>;

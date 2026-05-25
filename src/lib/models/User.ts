@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -34,4 +34,4 @@ const UserSchema = new Schema<IUser>({
   chatEnabled:     Boolean,
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const UserModel = (models.User || model<IUser>('User', UserSchema)) as ReturnType<typeof model<IUser>>;
+export const UserModel = (models.User || model<IUser>('User', UserSchema)) as Model<IUser>;

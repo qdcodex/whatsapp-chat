@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -30,4 +30,4 @@ const WorkspaceSchema = new Schema<IWorkspace>({
   autoDeleteDays:     { type: Number, default: 7 },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const WorkspaceModel = (models.Workspace || model<IWorkspace>('Workspace', WorkspaceSchema)) as ReturnType<typeof model<IWorkspace>>;
+export const WorkspaceModel = (models.Workspace || model<IWorkspace>('Workspace', WorkspaceSchema)) as Model<IWorkspace>;

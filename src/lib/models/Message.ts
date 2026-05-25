@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -66,4 +66,4 @@ const MessageSchema = new Schema<IMessage>({
   deletedForEveryone:{ type: Boolean, default: false },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const MessageModel = (models.Message || model<IMessage>('Message', MessageSchema)) as ReturnType<typeof model<IMessage>>;
+export const MessageModel = (models.Message || model<IMessage>('Message', MessageSchema)) as Model<IMessage>;

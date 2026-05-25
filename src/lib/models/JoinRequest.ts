@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 const transform = (_: unknown, ret: Record<string, unknown>) => {
   delete ret._id;
@@ -26,4 +26,4 @@ const JoinRequestSchema = new Schema<IJoinRequest>({
   createdAt: { type: Number, required: true },
 }, { toJSON: { transform }, toObject: { transform } });
 
-export const JoinRequestModel = (models.JoinRequest || model<IJoinRequest>('JoinRequest', JoinRequestSchema)) as ReturnType<typeof model<IJoinRequest>>;
+export const JoinRequestModel = (models.JoinRequest || model<IJoinRequest>('JoinRequest', JoinRequestSchema)) as Model<IJoinRequest>;
