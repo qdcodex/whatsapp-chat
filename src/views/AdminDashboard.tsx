@@ -7,6 +7,8 @@ import { useMessageStore } from '@/stores/messageStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { usePresenceStore } from '@/stores/presenceStore';
 import { useGroupStore } from '@/stores/groupStore';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { socketClient } from '@/lib/socketClient';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import MessageFeed from '@/components/MessageFeed';
@@ -43,7 +45,14 @@ const AdminDashboard = () => {
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, getUserByPhone, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
-  const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
+  const { setOnline } = usePresenceStore();
+
+  // Socket-based real-time presence (works across devices/browsers)
+  const { isUserOnline, isDMUserTyping } = useOnlineStatus({
+    userId: currentUser?.id || '',
+    workspaceId: workspaceId || '',
+    enabled: !!workspaceId && !!currentUser,
+  });
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
   const { addPaymentNotification } = useNotificationStore();
   const { recordPayment, getPaymentStatus, getDaysRemaining, getSubscription, ensureSubscription, getBillingCycleDays } = usePaymentStore();
@@ -199,11 +208,9 @@ const AdminDashboard = () => {
     const isDM = typeof chatView === 'object' && chatView.type === 'dm';
     if (isDM) {
       const targetId = (chatView as { type: 'dm'; userId: string }).userId;
-      setTypingDM(currentUser.id, targetId);
-      setTimeout(() => clearTypingDM(currentUser.id, targetId), 3000);
+      socketClient.setTypingWithDebounce(targetId, undefined);
     } else {
-      setTyping(currentUser.id, workspaceId!);
-      setTimeout(() => clearTyping(currentUser.id, workspaceId!), 3000);
+      socketClient.setTypingWithDebounce(undefined, workspaceId!);
     }
   };
 
@@ -481,7 +488,7 @@ const AdminDashboard = () => {
                   avatar={user.avatar}
                   size="md"
                   showOnlineStatus
-                  isOnline={checkOnline(user.id)}
+                  isOnline={isUserOnline(user.id)}
                 />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
@@ -555,11 +562,11 @@ const AdminDashboard = () => {
                   avatar={activeDMUser.avatar}
                   size="sm"
                   showOnlineStatus
-                  isOnline={checkOnline(activeDMUser.id)}
+                  isOnline={isUserOnline(activeDMUser.id)}
                 />
                 <div className="min-w-0">
                   <p className="font-medium text-[15px] text-wa-header-fg truncate">{activeDMUser.displayName}</p>
-                  <OnlineStatus isOnline={checkOnline(activeDMUser.id)} lastSeen={getLastSeen(activeDMUser.id)} size="sm" />
+                  <OnlineStatus isOnline={isUserOnline(activeDMUser.id)} size="sm" />
                 </div>
               </>
             ) : activeGroup ? (
@@ -630,7 +637,7 @@ const AdminDashboard = () => {
           onDelete={handleDelete}
         />
 
-        {typeof chatView === 'object' && chatView.type === 'dm' && checkTypingDM(chatView.userId, currentUser.id) && (
+        {typeof chatView === 'object' && chatView.type === 'dm' && isDMUserTyping(chatView.userId) && (
           <TypingIndicator name={activeDMUser?.displayName || 'User'} />
         )}
 

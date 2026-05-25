@@ -93,9 +93,6 @@ export function useOnlineStatus({
       }
     });
 
-    // Request current online users on mount
-    emit('request:online-users');
-
     // Handle the online-users list response
     const unsubOnlineUsers = on(
       'online-users',
@@ -104,12 +101,21 @@ export function useOnlineStatus({
       }
     );
 
+    // Request online users when socket first connects (handles async connection timing)
+    const unsubConnected = on('connected', () => {
+      emit('request:online-users');
+    });
+
+    // Also try immediately in case socket is already connected
+    emit('request:online-users');
+
     return () => {
       unsubOnline();
       unsubOffline();
       unsubTypingStart();
       unsubTypingStop();
       unsubOnlineUsers();
+      unsubConnected();
     };
   }, [enabled, userId, workspaceId, on, emit]);
 
