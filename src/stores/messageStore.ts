@@ -46,6 +46,7 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
   initialize: async () => {
     if (get().isInitialized) return;
     const res = await fetch('/api/messages');
+    if (!res.ok) return;
     const messages: Message[] = await res.json();
     set({ messages, isInitialized: true });
   },

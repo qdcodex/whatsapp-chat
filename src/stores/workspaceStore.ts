@@ -25,6 +25,7 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
   initialize: async () => {
     if (get().isInitialized) return;
     const res = await fetch('/api/workspaces');
+    if (!res.ok) return;
     const workspaces: Workspace[] = await res.json();
     set({ workspaces, isInitialized: true });
   },

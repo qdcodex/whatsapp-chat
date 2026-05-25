@@ -29,7 +29,7 @@ import type { ChatView } from '@/types';
 const UserDashboard = () => {
   const router = useRouter();
   const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
-  const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
+  const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline } = usePresenceStore();
   const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
@@ -79,16 +79,16 @@ const UserDashboard = () => {
   }, [currentUser, setOnline]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !_slug) return;
 
-    const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, currentUser.adminId!);
-    const presenceCleanup = usePresenceStore.getState().initializeRealTime(currentUser.id, currentUser.adminId!);
+    const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, _slug);
+    const presenceCleanup = usePresenceStore.getState().initializeRealTime(currentUser.id, _slug);
 
     return () => {
       messageCleanup?.();
       presenceCleanup?.();
     };
-  }, [currentUser?.id, currentUser?.adminId]);
+  }, [currentUser?.id, _slug]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'user') {
@@ -107,16 +107,6 @@ const UserDashboard = () => {
     }
   }, [currentUser?.adminId]);
 
-  useEffect(() => {
-    if (!currentUser?.adminId) return;
-    const workspace = getWorkspaceByAdmin(currentUser.adminId);
-    const slug = workspace?.slug;
-    if (!slug) return;
-    const interval = setInterval(() => {
-      refreshMessages(slug);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [currentUser?.adminId]);
 
   if (!currentUser || currentUser.role !== 'user') return null;
 

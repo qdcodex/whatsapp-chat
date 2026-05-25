@@ -51,6 +51,7 @@ export const useGroupStore = create<GroupState>()((set, get) => ({
       fetch('/api/join-requests'),
       fetch('/api/group-creation-requests'),
     ]);
+    if (!gRes.ok || !jRes.ok || !gcrRes.ok) return;
     const [groups, joinRequests, groupCreationRequests] = await Promise.all([
       gRes.json(), jRes.json(), gcrRes.json(),
     ]);

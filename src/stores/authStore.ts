@@ -34,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
   initialize: async () => {
     if (get().isInitialized) return;
     const res = await fetch('/api/users');
+    if (!res.ok) return;
     const users: User[] = await res.json();
     set({ users, isInitialized: true });
   },

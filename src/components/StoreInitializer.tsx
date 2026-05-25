@@ -14,7 +14,7 @@ export function StoreInitializer() {
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    Promise.all([
+    Promise.allSettled([
       useAuthStore.getState().initialize(),
       useWorkspaceStore.getState().initialize(),
       useMessageStore.getState().initialize(),

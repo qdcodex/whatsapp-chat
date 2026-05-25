@@ -41,7 +41,7 @@ const AdminDashboard = () => {
   const { workspaceId } = useParams() as { workspaceId: string };
   const router = useRouter();
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser, updateUser } = useAuthStore();
-  const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount, refreshMessages } = useMessageStore();
+  const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
@@ -136,13 +136,6 @@ const AdminDashboard = () => {
     }
   }, [chatView, currentUser, workspaceId]);
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    const interval = setInterval(() => {
-      refreshMessages(workspaceId);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [workspaceId]);
 
   if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) return null;
 

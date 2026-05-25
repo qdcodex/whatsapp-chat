@@ -23,6 +23,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
     if (get().isInitialized) return;
     // notificationStore shares the payment notifications collection
     const res = await fetch('/api/payments/notifications');
+    if (!res.ok) return;
     const paymentNotifications: PaymentNotification[] = await res.json();
     set({ paymentNotifications, isInitialized: true });
   },

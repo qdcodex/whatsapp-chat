@@ -41,6 +41,7 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
       fetch('/api/payments/subscriptions'),
       fetch('/api/payments/notifications'),
     ]);
+    if (!sRes.ok || !nRes.ok) return;
     const [subscriptions, notifications] = await Promise.all([sRes.json(), nRes.json()]);
     set({ subscriptions, notifications, isInitialized: true });
   },
