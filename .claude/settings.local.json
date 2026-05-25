@@ -7,7 +7,12 @@
       "Bash(npx tsc:*)",
       "Bash(grep -v \"^$\")",
       "mcp__Claude_Preview__preview_start",
-      "mcp__Claude_in_Chrome__tabs_context_mcp"
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(git rm *)",
+      "Bash(git push *)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('package.json'\\)\\); print\\('deps:', 'tsx' in d.get\\('dependencies',{}\\)\\); print\\('devDeps:', 'tsx' in d.get\\('devDependencies',{}\\)\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
