@@ -16,9 +16,9 @@ dist-ssr
 .next
 .next/
 
-# Lock file duplicates — keep only bun.lock
+# Bun lock files — project uses npm for CI/Railway
+bun.lock
 bun.lockb
-package-lock.json
 
 # Editor directories and files
 .vscode/*
