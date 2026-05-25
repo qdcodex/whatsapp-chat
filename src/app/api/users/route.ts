@@ -27,6 +27,16 @@ export async function POST(req: NextRequest) {
   return withDB(async () => {
     await connectDB();
     const data = await req.json();
+    // Prevent duplicate phone numbers across all users
+    if (data.phone) {
+      const existing = await UserModel.findOne({ phone: data.phone }).lean().exec();
+      if (existing) {
+        return NextResponse.json(
+          { error: 'A user with this phone number already exists' },
+          { status: 409 }
+        );
+      }
+    }
     const user = await UserModel.create(data);
     return NextResponse.json(user.toJSON(), { status: 201 });
   });

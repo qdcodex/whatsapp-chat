@@ -28,7 +28,7 @@ import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const router = useRouter();
-  const { currentUser, logout, getUserById, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
+  const { currentUser, logout, getUserById, getUserByPhone, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
   const { setOnline } = usePresenceStore();
@@ -212,20 +212,26 @@ const UserDashboard = () => {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
     for (const c of contacts) {
-      const existing = getUserById(c.phone.trim());
+      const phone = c.phone.trim();
+      if (!phone) continue;
+      const existing = getUserByPhone(phone);
       if (existing) {
         addMember(groupId, existing.id);
       } else {
-        const newUser = await createUser({
-          username: c.phone.trim(),
-          password: Math.random().toString(36).slice(2, 10),
-          role: 'user',
-          displayName: c.name.trim(),
-          phone: c.phone.trim(),
-          workspaceId: slug,
-          adminId: currentUser.adminId!,
-        });
-        addMember(groupId, newUser.id);
+        try {
+          const newUser = await createUser({
+            username: phone,
+            password: Math.random().toString(36).slice(2, 10),
+            role: 'user',
+            displayName: c.name.trim() || phone,
+            phone,
+            workspaceId: slug,
+            adminId: currentUser.adminId!,
+          });
+          addMember(groupId, newUser.id);
+        } catch (err: any) {
+          toast.error(err?.message || `Failed to add ${c.name || phone}`);
+        }
       }
     }
   };

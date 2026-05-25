@@ -40,7 +40,7 @@ import type { ChatView, User, Message } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams() as { workspaceId: string };
   const router = useRouter();
-  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, createUser, updateUser } = useAuthStore();
+  const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, getUserByPhone, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
   const { setOnline, isOnline: checkOnline, getLastSeen, setTyping, clearTyping, isTyping: checkTyping, setTypingDM, clearTypingDM, isTypingDM: checkTypingDM } = usePresenceStore();
@@ -66,22 +66,26 @@ const AdminDashboard = () => {
   const handleCreateUser = async () => {
     if (!newUserName.trim()) { toast.error('Name is required'); return; }
     if (!newUserPhone.trim()) { toast.error('Phone number is required'); return; }
-    const existing = users.find(u => u.phone === newUserPhone.trim());
-    if (existing) { toast.error('A user with this phone already exists'); return; }
-    const user = await createUser({
-      username: newUserPhone.trim(),
-      password: Math.random().toString(36).slice(2, 10),
-      role: 'user',
-      displayName: newUserName.trim(),
-      phone: newUserPhone.trim(),
-      workspaceId: workspaceId!,
-      adminId: currentUser!.id,
-    });
-    setNewUserName('');
-    setNewUserPhone('');
-    setCreateUserOpen(false);
-    toast.success(`${user.displayName} added`);
-    openDM(user.id);
+    const existing = getUserByPhone(newUserPhone.trim());
+    if (existing) { toast.error('A user with this phone number already exists'); return; }
+    try {
+      const user = await createUser({
+        username: newUserPhone.trim(),
+        password: Math.random().toString(36).slice(2, 10),
+        role: 'user',
+        displayName: newUserName.trim(),
+        phone: newUserPhone.trim(),
+        workspaceId: workspaceId!,
+        adminId: currentUser!.id,
+      });
+      setNewUserName('');
+      setNewUserPhone('');
+      setCreateUserOpen(false);
+      toast.success(`${user.displayName} added`);
+      openDM(user.id);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create user');
+    }
   };
 
   const handleUpdateDisplayName = async () => {

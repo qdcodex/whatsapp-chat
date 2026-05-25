@@ -15,10 +15,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const workspaceId = useWorkspaceStore((s) => {
     const parts = pathname?.split('/').filter(Boolean) ?? [];
     if (parts[0] === 'workspace' && parts[1]) {
-      return s.getWorkspaceByAdmin(parts[1])?.id ?? '';
+      return s.getWorkspaceByAdmin(parts[1])?.slug ?? '';
     }
     if (parts[0] === 'admin' && parts[1]) {
-      return parts[1]; // already the workspaceId
+      return parts[1]; // already the workspace slug
     }
     return '';
   });

@@ -17,6 +17,7 @@ interface AuthState {
   getUsersByAdmin: (adminId: string) => User[];
   getAdmins: () => User[];
   getUserById: (id: string) => User | undefined;
+  getUserByPhone: (phone: string) => User | undefined;
   getMaskedPhone: (userId: string) => string;
   updateAvatar: (userId: string, avatar: string) => Promise<void>;
   updateUser: (userId: string, data: Partial<Pick<User, 'displayName' | 'avatar' | 'phone' | 'password'>>) => Promise<void>;
@@ -54,13 +55,22 @@ export const useAuthStore = create<AuthState>()(
   logout: () => set({ currentUser: null }),
 
   createUser: async (data) => {
+    // Guard duplicate phone on the client side before sending to server
+    if (data.phone) {
+      const duplicate = get().users.find(u => u.phone && u.phone === data.phone);
+      if (duplicate) throw new Error('A user with this phone number already exists');
+    }
     const newUser: User = { ...data, id: generateId(), createdAt: Date.now() };
-    set(s => ({ users: [...s.users, newUser] }));
-    await fetch('/api/users', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newUser),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create user');
+    }
+    set(s => ({ users: [...s.users, newUser] }));
     return newUser;
   },
 
@@ -86,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
   getUsersByAdmin: (adminId) => get().users.filter(u => u.role === 'user' && u.adminId === adminId),
   getAdmins: () => get().users.filter(u => u.role === 'admin'),
   getUserById: (id) => get().users.find(u => u.id === id),
+  getUserByPhone: (phone) => get().users.find(u => u.phone && u.phone === phone),
 
   getMaskedPhone: (userId) => {
     const user = get().users.find(u => u.id === userId);

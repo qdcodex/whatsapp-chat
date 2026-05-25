@@ -8,7 +8,8 @@ class SocketClient {
   private typingTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   connect(userId: string, workspaceId: string) {
-    if (this.socket?.connected) return this.socket;
+    // If a socket instance already exists (connecting or connected), don't create another
+    if (this.socket) return this.socket;
 
     this.userId = userId;
     this.workspaceId = workspaceId;
