@@ -73,10 +73,6 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       });
     }, 800);
 
-    if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-      const text = msg.text || (msg.audioUrl ? '🎤 Voice message' : msg.imageUrl ? '📷 Photo' : 'New message');
-      new Notification('BroadcastHub', { body: text, icon: '/icon-192.png' });
-    }
   },
 
   deleteMessage: (messageId, userId, mode) => {
@@ -144,7 +140,8 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
 
   getConversationPreview: (workspaceId, adminId, userId) => {
     const msgs = get().messages.filter(m =>
-      m.workspaceId === workspaceId && m.recipientId && !m.groupId && !m.deletedForEveryone &&
+      m.workspaceId === workspaceId && m.recipientId && !m.groupId &&
+      isVisibleTo(m, adminId) &&
       ((m.senderId === adminId && m.recipientId === userId) ||
        (m.senderId === userId && m.recipientId === adminId))
     );
@@ -208,15 +205,16 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       }
     });
 
-    // Listen for real-time delete from other users via socket
-    socketClient.on('message:deleted', (data: { messageId: string; deletedForEveryone?: boolean; deletedFor?: string }) => {
+    // Save callback refs so they can be removed on cleanup
+    const handleDeletedEvent = (data: { messageId: string; deletedForEveryone?: boolean; deletedFor?: string }) => {
       get().handleRemoteDelete(data);
-    });
-
-    // Listen for new messages from other users via socket
-    socketClient.on('message:new', (data: Message) => {
+    };
+    const handleNewMessageEvent = (data: Message) => {
       get().handleRemoteMessage(data);
-    });
+    };
+
+    socketClient.on('message:deleted', handleDeletedEvent);
+    socketClient.on('message:new', handleNewMessageEvent);
 
     // Only refresh on page visibility change, not constantly
     const handleVisibilityChange = () => {
@@ -234,6 +232,8 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
     return () => {
       clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      socketClient.off('message:deleted', handleDeletedEvent);
+      socketClient.off('message:new', handleNewMessageEvent);
     };
   },
 

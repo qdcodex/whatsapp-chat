@@ -3,6 +3,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 
 let io: SocketIOServer | null = null;
 const userSockets = new Map<string, string[]>(); // userId -> socketIds[]
+const workspaceUsers = new Map<string, Set<string>>(); // workspaceId -> Set<userId>
 
 export function getSocketIOInstance(): SocketIOServer {
   if (!io) {
@@ -52,6 +53,12 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       userSockets.set(userId, []);
     }
     userSockets.get(userId)?.push(socket.id);
+
+    // Track this user in their workspace
+    if (!workspaceUsers.has(workspaceId)) {
+      workspaceUsers.set(workspaceId, new Set());
+    }
+    workspaceUsers.get(workspaceId)!.add(userId);
 
     socket.join(`user:${userId}`);
     socket.join(`workspace:${workspaceId}`);
@@ -161,9 +168,10 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // Sync online status on demand
+    // Sync online status on demand — scoped to this socket's workspace only
     socket.on('request:online-users', () => {
-      const onlineUsers = Array.from(userSockets.keys());
+      const wsUsers = workspaceUsers.get(workspaceId);
+      const onlineUsers = wsUsers ? Array.from(wsUsers) : [];
       socket.emit('online-users', { onlineUsers, timestamp: Date.now() });
     });
 
@@ -177,6 +185,7 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
         }
         if (sockets.length === 0) {
           userSockets.delete(userId);
+          workspaceUsers.get(workspaceId)?.delete(userId);
           // Notify others that user is completely offline
           io?.to(`workspace:${workspaceId}`).emit('user:offline', {
             userId,

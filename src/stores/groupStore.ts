@@ -102,20 +102,19 @@ export const useGroupStore = create<GroupState>()((set, get) => ({
   },
 
   toggleMemberMute: (groupId, userId) => {
+    const group = get().groups.find(g => g.id === groupId);
+    if (!group) return;
+    const muted = group.mutedMemberIds || [];
+    const isMuted = muted.includes(userId);
+    const mutedMemberIds = isMuted ? muted.filter(id => id !== userId) : [...muted, userId];
     set(s => ({
-      groups: s.groups.map(g => {
-        if (g.id !== groupId) return g;
-        const muted = g.mutedMemberIds || [];
-        const isMuted = muted.includes(userId);
-        const mutedMemberIds = isMuted ? muted.filter(id => id !== userId) : [...muted, userId];
-        fetch(`/api/groups/${groupId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mutedMemberIds }),
-        });
-        return { ...g, mutedMemberIds };
-      }),
+      groups: s.groups.map(g => g.id === groupId ? { ...g, mutedMemberIds } : g),
     }));
+    fetch(`/api/groups/${groupId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mutedMemberIds }),
+    });
   },
 
   isMemberMuted: (groupId, userId) => get().groups.find(g => g.id === groupId)?.mutedMemberIds?.includes(userId) ?? false,

@@ -45,7 +45,6 @@ const AdminDashboard = () => {
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, getUserByPhone, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
-  const { setOnline } = usePresenceStore();
 
   // Socket-based real-time presence (works across devices/browsers)
   const { isUserOnline, isDMUserTyping } = useOnlineStatus({
@@ -114,13 +113,6 @@ const AdminDashboard = () => {
       Notification.requestPermission();
     }
   }, []);
-
-  useEffect(() => {
-    if (!currentUser) return;
-    setOnline(currentUser.id);
-    const interval = setInterval(() => setOnline(currentUser.id), 15000);
-    return () => clearInterval(interval);
-  }, [currentUser, setOnline]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
@@ -432,7 +424,7 @@ const AdminDashboard = () => {
                                 {user.phone && <span className="text-[10px] text-muted-foreground">{getMaskedPhone(user.id)}</span>}
                               </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => toggleUserChat(user.id)} className="gap-1 shrink-0">
+                            <Button variant="ghost" size="sm" onClick={() => toggleUserChat(user.id, !isUserChatEnabled(user))} className="gap-1 shrink-0">
                               {isUserChatEnabled(user) ? (
                                 <><ToggleRight className="w-4 h-4 text-primary" /><span className="text-primary text-[10px]">On</span></>
                               ) : (
@@ -590,7 +582,7 @@ const AdminDashboard = () => {
                 variant="ghost"
                 size="sm"
                 className="text-xs gap-1 h-8 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg"
-                onClick={() => { toggleUserChat(activeDMUser.id); toast.success('Chat permission updated'); }}
+                onClick={() => { toggleUserChat(activeDMUser.id, !isUserChatEnabled(activeDMUser)); toast.success('Chat permission updated'); }}
               >
                 {isUserChatEnabled(activeDMUser) ? (
                   <><ToggleRight className="w-4 h-4" /><span className="hidden sm:inline">Chat On</span></>

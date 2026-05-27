@@ -13,7 +13,7 @@ interface AuthState {
   logout: () => void;
   createUser: (data: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   deleteUser: (id: string) => Promise<void>;
-  toggleUserChat: (userId: string) => Promise<void>;
+  toggleUserChat: (userId: string, newValue: boolean) => Promise<void>;
   getUsersByAdmin: (adminId: string) => User[];
   getAdmins: () => User[];
   getUserById: (id: string) => User | undefined;
@@ -79,10 +79,10 @@ export const useAuthStore = create<AuthState>()(
     await fetch(`/api/users/${id}`, { method: 'DELETE' });
   },
 
-  toggleUserChat: async (userId) => {
+  toggleUserChat: async (userId, newValue) => {
     const user = get().users.find(u => u.id === userId);
     if (!user) return;
-    const chatEnabled = user.chatEnabled === undefined ? true : !user.chatEnabled;
+    const chatEnabled = newValue;
     set(s => ({
       users: s.users.map(u => u.id === userId ? { ...u, chatEnabled } : u),
     }));

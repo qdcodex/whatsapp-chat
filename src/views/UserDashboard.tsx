@@ -31,13 +31,11 @@ const UserDashboard = () => {
   const { currentUser, logout, getUserById, getUserByPhone, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
-  const { setOnline } = usePresenceStore();
   const { getUserGroups, isMemberMuted, addMember } = useGroupStore();
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
-  const [, setTick] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
 
@@ -71,14 +69,6 @@ const UserDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
-    setOnline(currentUser.id);
-    const heartbeat = setInterval(() => setOnline(currentUser.id), 15000);
-    const ticker = setInterval(() => setTick((t) => t + 1), 2000);
-    return () => { clearInterval(heartbeat); clearInterval(ticker); };
-  }, [currentUser, setOnline]);
-
-  useEffect(() => {
     if (!currentUser || !_slug) return;
 
     const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, _slug);
@@ -89,6 +79,19 @@ const UserDashboard = () => {
       presenceCleanup?.();
     };
   }, [currentUser?.id, _slug]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let unread: import('@/types').Message[] = [];
+    if (typeof chatView === 'object' && chatView.type === 'dm' && chatView.userId) {
+      const msgs = getDMMessages(_slug, currentUser.id, chatView.userId);
+      unread = msgs.filter(m => m.senderId !== currentUser.id && m.status !== 'read');
+    } else if (typeof chatView === 'object' && chatView.type === 'group') {
+      const msgs = getGroupMessages((chatView as { type: 'group'; groupId: string }).groupId);
+      unread = msgs.filter(m => m.senderId !== currentUser.id && m.status !== 'read');
+    }
+    if (unread.length > 0) markAsRead(unread.map(m => m.id));
+  }, [chatView, currentUser, _slug]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'user') {
@@ -140,9 +143,6 @@ const UserDashboard = () => {
   const isDMChat = isDMChatView(chatView);
   const isGroupChat = typeof chatView === 'object' && chatView.type === 'group';
   const activeGroup = isGroupChat ? groups.find(g => g.id === (chatView as { type: 'group'; groupId: string }).groupId) : null;
-
-  const unread = activeMessages.filter((m) => m.senderId !== currentUser.id && m.status !== 'read');
-  if (unread.length > 0) markAsRead(unread.map((m) => m.id));
 
   // Use socket-based presence (works across different devices/users)
   const dmTargetOnline = dmTargetId ? isUserOnline(dmTargetId) : false;

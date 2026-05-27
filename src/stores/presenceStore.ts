@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { broadcastChannelSync } from '@/lib/broadcastChannelSync';
 
 interface PresenceState {
@@ -23,9 +22,7 @@ interface PresenceState {
   handleRemoteTypingStop: (data: { userId: string; targetId?: string; groupId?: string }) => void;
 }
 
-export const usePresenceStore = create<PresenceState>()(
-  persist(
-    (set, get) => ({
+export const usePresenceStore = create<PresenceState>()((set, get) => ({
   onlineUsers: {},
   typingUsers: {},
   typingInDM: {},
@@ -173,7 +170,4 @@ export const usePresenceStore = create<PresenceState>()(
       return s;
     });
   },
-}),
-    { name: 'broadcast-presence' }
-  )
-);
+}));
