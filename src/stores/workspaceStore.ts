@@ -14,6 +14,7 @@ interface WorkspaceState {
   toggleMessaging: (adminId: string) => Promise<void>;
   toggleAutoDelete: (workspaceId: string) => Promise<void>;
   setAutoDeleteDays: (workspaceId: string, days: number) => Promise<void>;
+  updateAd: (workspaceId: string, ad: Pick<Workspace, 'adEnabled' | 'adImageUrl' | 'adTitle' | 'adText' | 'adLinkUrl'>) => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -99,6 +100,15 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ autoDeleteDays: days }),
+    });
+  },
+
+  updateAd: async (workspaceId, ad) => {
+    set(s => ({ workspaces: s.workspaces.map(w => w.id === workspaceId ? { ...w, ...ad } : w) }));
+    await fetch(`/api/workspaces/${workspaceId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ad),
     });
   },
 }));

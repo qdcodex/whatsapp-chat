@@ -14,7 +14,7 @@ import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LogOut, Users, ArrowLeft, Search, Settings } from 'lucide-react';
+import { LogOut, Users, ArrowLeft, Search, Settings, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import ProfileAvatar from '@/components/ProfileAvatar';
 import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
+import AdBanner from '@/components/AdBanner';
 import { toast } from 'sonner';
 import type { ChatView } from '@/types';
 
@@ -447,6 +448,17 @@ const UserDashboard = () => {
             );
           })}
         </div>
+
+        {/* Sponsored ad — compact strip pinned to sidebar bottom */}
+        {workspace?.adEnabled && (
+          <AdBanner
+            title={workspace.adTitle}
+            text={workspace.adText}
+            imageUrl={workspace.adImageUrl}
+            linkUrl={workspace.adLinkUrl}
+            variant="compact"
+          />
+        )}
       </div>
 
       {/* Chat Panel */}
@@ -493,6 +505,45 @@ const UserDashboard = () => {
             ) : null}
           </div>
         </div>
+
+        {/* Empty state — shown on desktop when no chat is selected */}
+        {!dmTarget && !activeGroup && (
+          <div className="hidden md:flex flex-col flex-1 items-center justify-center gap-4 bg-wa-sidebar-header">
+            {workspace?.adEnabled && (workspace.adTitle || workspace.adText || workspace.adImageUrl) ? (
+              <div className="w-full max-w-sm px-6">
+                <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                  {workspace.adImageUrl && (
+                    <img
+                      src={workspace.adImageUrl}
+                      alt={workspace.adTitle || 'Ad'}
+                      className="w-full h-40 object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  )}
+                  <div className="p-4 space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sponsored</p>
+                    {workspace.adTitle && <p className="font-semibold text-sm">{workspace.adTitle}</p>}
+                    {workspace.adText && <p className="text-xs text-muted-foreground">{workspace.adText}</p>}
+                    {workspace.adLinkUrl && (
+                      <a
+                        href={workspace.adLinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline"
+                      >
+                        Learn more <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                <p className="text-sm">Select a chat to start messaging</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <MessageFeed
           messages={activeMessages}

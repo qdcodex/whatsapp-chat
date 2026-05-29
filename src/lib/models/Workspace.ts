@@ -16,6 +16,11 @@ interface IWorkspace extends Document {
   messagingEnabled?: boolean;
   autoDeleteMessages?: boolean;
   autoDeleteDays?: number;
+  adEnabled?: boolean;
+  adImageUrl?: string;
+  adTitle?: string;
+  adText?: string;
+  adLinkUrl?: string;
 }
 
 const WorkspaceSchema = new Schema<IWorkspace>({
@@ -28,6 +33,11 @@ const WorkspaceSchema = new Schema<IWorkspace>({
   messagingEnabled:   { type: Boolean, default: true },
   autoDeleteMessages: { type: Boolean, default: false },
   autoDeleteDays:     { type: Number, default: 7 },
+  adEnabled:          { type: Boolean, default: false },
+  adImageUrl:         String,
+  adTitle:            String,
+  adText:             String,
+  adLinkUrl:          String,
 }, { toJSON: { transform }, toObject: { transform } });
 
 export const WorkspaceModel = (models.Workspace || model<IWorkspace>('Workspace', WorkspaceSchema)) as Model<IWorkspace>;

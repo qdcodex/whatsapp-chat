@@ -24,6 +24,7 @@ import {
   LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, ToggleLeft, ToggleRight,
   Search, UserPlus, Clock, CreditCard, CheckCircle, AlertCircle, AlertTriangle,
+  Megaphone, ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -44,7 +45,7 @@ const AdminDashboard = () => {
   const router = useRouter();
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, getUserByPhone, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
-  const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays } = useWorkspaceStore();
+  const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays, updateAd } = useWorkspaceStore();
 
   // Socket-based real-time presence (works across devices/browsers)
   const { isUserOnline, isDMUserTyping } = useOnlineStatus({
@@ -67,6 +68,10 @@ const AdminDashboard = () => {
   const [newUserName, setNewUserName] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [autoDeleteDaysInput, setAutoDeleteDaysInput] = useState('7');
+  const [adImageInput, setAdImageInput] = useState('');
+  const [adTitleInput, setAdTitleInput] = useState('');
+  const [adTextInput, setAdTextInput] = useState('');
+  const [adLinkInput, setAdLinkInput] = useState('');
   const [deleteUserConfirm, setDeleteUserConfirm] = useState<string | null>(null);
   const [deleteUserName, setDeleteUserName] = useState<string>('');
   const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
@@ -206,6 +211,29 @@ const AdminDashboard = () => {
     }
   };
 
+  // Sync ad inputs when settings dialog opens
+  const handleSettingsOpen = (open: boolean) => {
+    if (open && workspace) {
+      setAdImageInput(workspace.adImageUrl || '');
+      setAdTitleInput(workspace.adTitle || '');
+      setAdTextInput(workspace.adText || '');
+      setAdLinkInput(workspace.adLinkUrl || '');
+    }
+    setSettingsOpen(open);
+  };
+
+  const handleSaveAd = () => {
+    if (!workspace) return;
+    updateAd(workspace.id, {
+      adEnabled: workspace.adEnabled ?? false,
+      adImageUrl: adImageInput.trim() || undefined,
+      adTitle:    adTitleInput.trim() || undefined,
+      adText:     adTextInput.trim() || undefined,
+      adLinkUrl:  adLinkInput.trim() || undefined,
+    });
+    toast.success('Ad saved');
+  };
+
   const handleSaveAutoDeleteDays = () => {
     const days = parseInt(autoDeleteDaysInput);
     if (isNaN(days) || days < 1) { toast.error('Enter a valid number of days'); return; }
@@ -265,7 +293,7 @@ const AdminDashboard = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <Dialog open={settingsOpen} onOpenChange={handleSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
                   <Settings className="w-5 h-5" />
@@ -343,6 +371,96 @@ const AdminDashboard = () => {
                         <span className="text-xs text-muted-foreground">(currently {autoDeleteDays}d)</span>
                       </div>
                     )}
+                  </div>
+
+                  <div className="h-px bg-border" />
+
+                  {/* Advertisement */}
+                  <div className="p-3 bg-secondary rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm flex items-center gap-1.5">
+                          <Megaphone className="w-4 h-4 text-primary" />
+                          Advertisement
+                        </p>
+                        <p className="text-xs text-muted-foreground">Show a sponsored banner to users</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => workspace && updateAd(workspace.id, {
+                          adEnabled: !workspace.adEnabled,
+                          adImageUrl: workspace.adImageUrl,
+                          adTitle:    workspace.adTitle,
+                          adText:     workspace.adText,
+                          adLinkUrl:  workspace.adLinkUrl,
+                        })}
+                        className="gap-1.5"
+                      >
+                        {workspace?.adEnabled ? (
+                          <><ToggleRight className="w-5 h-5 text-primary" /><span className="text-primary text-xs">On</span></>
+                        ) : (
+                          <><ToggleLeft className="w-5 h-5 text-muted-foreground" /><span className="text-muted-foreground text-xs">Off</span></>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Image URL (optional)"
+                        value={adImageInput}
+                        onChange={(e) => setAdImageInput(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="Title"
+                        value={adTitleInput}
+                        onChange={(e) => setAdTitleInput(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="Description (optional)"
+                        value={adTextInput}
+                        onChange={(e) => setAdTextInput(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="Link URL (optional)"
+                        value={adLinkInput}
+                        onChange={(e) => setAdLinkInput(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                    {/* Live preview */}
+                    {(adTitleInput || adTextInput || adImageInput) && (
+                      <div className="rounded-lg border border-border overflow-hidden">
+                        <p className="text-[10px] text-muted-foreground px-2 pt-1.5">Preview</p>
+                        <div className="flex items-center gap-2.5 px-2 pb-2">
+                          {adImageInput && (
+                            <img
+                              src={adImageInput}
+                              alt="Ad preview"
+                              className="w-10 h-10 rounded-lg object-cover shrink-0"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <div className="min-w-0">
+                            {adTitleInput && <p className="text-[12px] font-semibold truncate">{adTitleInput}</p>}
+                            {adTextInput && <p className="text-[11px] text-muted-foreground truncate">{adTextInput}</p>}
+                            {adLinkInput && (
+                              <span className="text-[10px] text-primary flex items-center gap-0.5">
+                                <ExternalLink className="w-2.5 h-2.5" /> Link attached
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button size="sm" className="w-full h-8 text-xs" onClick={handleSaveAd}>
+                      Save Ad
+                    </Button>
                   </div>
 
                   {/* Subscription / Payment */}

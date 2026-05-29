@@ -86,6 +86,11 @@ export interface Workspace {
   messagingEnabled?: boolean;    // admin can send messages (super admin toggle)
   autoDeleteMessages?: boolean;
   autoDeleteDays?: number; // default 7
+  adEnabled?: boolean;
+  adImageUrl?: string;
+  adTitle?: string;
+  adText?: string;
+  adLinkUrl?: string;
 }
 
 export interface PaymentNotification {
