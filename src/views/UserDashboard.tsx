@@ -466,18 +466,76 @@ const UserDashboard = () => {
               </button>
             );
           })}
-        </div>
 
-        {/* Sponsored ad — compact strip pinned to sidebar bottom */}
-        {workspace?.adEnabled && (
-          <AdBanner
-            title={workspace.adTitle}
-            text={workspace.adText}
-            imageUrl={workspace.adImageUrl}
-            linkUrl={workspace.adLinkUrl}
-            variant="compact"
-          />
-        )}
+          {/* Sidebar ad — full-bleed hero card when image is set */}
+          {workspace?.adEnabled && (
+            workspace.adImageUrl ? (
+              <div className="px-3 pt-3 pb-5">
+                {workspace.adLinkUrl ? (
+                  <a
+                    href={workspace.adLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block relative rounded-2xl overflow-hidden shadow-md active:opacity-90 transition-opacity"
+                  >
+                    <img
+                      src={workspace.adImageUrl}
+                      alt={workspace.adTitle || 'Sponsored'}
+                      className="w-full h-44 object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span className="absolute top-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white text-[9px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Sponsored
+                    </span>
+                    {(workspace.adTitle || workspace.adText) && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-12 pb-3.5 px-3.5">
+                        {workspace.adTitle && (
+                          <p className="text-white font-bold text-[15px] leading-tight">{workspace.adTitle}</p>
+                        )}
+                        {workspace.adText && (
+                          <p className="text-white/75 text-xs mt-0.5 line-clamp-2">{workspace.adText}</p>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-[10px] text-white/70 mt-1.5">
+                          Tap to learn more <ExternalLink className="w-2.5 h-2.5" />
+                        </span>
+                      </div>
+                    )}
+                  </a>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden shadow-md">
+                    <img
+                      src={workspace.adImageUrl}
+                      alt={workspace.adTitle || 'Sponsored'}
+                      className="w-full h-44 object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span className="absolute top-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white text-[9px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Sponsored
+                    </span>
+                    {(workspace.adTitle || workspace.adText) && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-12 pb-3.5 px-3.5">
+                        {workspace.adTitle && (
+                          <p className="text-white font-bold text-[15px] leading-tight">{workspace.adTitle}</p>
+                        )}
+                        {workspace.adText && (
+                          <p className="text-white/75 text-xs mt-0.5 line-clamp-2">{workspace.adText}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (workspace.adTitle || workspace.adText) ? (
+              /* Fallback — text-only strip when no image uploaded */
+              <AdBanner
+                title={workspace.adTitle}
+                text={workspace.adText}
+                linkUrl={workspace.adLinkUrl}
+                variant="compact"
+              />
+            ) : null
+          )}
+        </div>
       </div>
 
       {/* Chat Panel */}
