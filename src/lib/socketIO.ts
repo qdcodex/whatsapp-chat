@@ -87,6 +87,15 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       io?.to(`workspace:${workspaceId}`).emit('message:deleted', data);
     });
 
+    // Profile updates — broadcast to everyone in the workspace
+    socket.on('user:profile-updated', (data: { userId: string; displayName?: string; avatar?: string }) => {
+      io?.to(`workspace:${workspaceId}`).emit('user:profile-updated', {
+        userId: data.userId,
+        displayName: data.displayName,
+        avatar: data.avatar,
+      });
+    });
+
     // Typing indicators with auto-stop timeout
     const typingTimeouts = new Map<string, NodeJS.Timeout>();
 

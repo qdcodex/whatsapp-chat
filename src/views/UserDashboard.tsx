@@ -24,6 +24,7 @@ import GroupInfoPanel from '@/components/GroupInfoPanel';
 import UnreadBadge from '@/components/UnreadBadge';
 import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import AdBanner from '@/components/AdBanner';
+import SetupProfileModal from '@/components/SetupProfileModal';
 import { toast } from 'sonner';
 import type { ChatView } from '@/types';
 
@@ -39,6 +40,7 @@ const UserDashboard = () => {
   const [replyingTo, setReplyingTo] = useState<{ message: import('@/types').Message; senderName: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   // Derive workspace slug early (needed for hooks below)
   const _workspace = currentUser ? getWorkspaceByAdmin(currentUser.adminId!) : null;
@@ -99,6 +101,23 @@ const UserDashboard = () => {
       router.replace('/');
     }
   }, [currentUser, router]);
+
+  // Show profile setup modal when user's name is still the admin-assigned default
+  // (displayName equals their phone number or username)
+  useEffect(() => {
+    if (!currentUser) return;
+    const looksLikePhone = (s: string) => /^[+\d\s\-().]{6,}$/.test(s.trim());
+    const isDefaultName =
+      currentUser.displayName === currentUser.username ||
+      currentUser.displayName === currentUser.phone ||
+      looksLikePhone(currentUser.displayName);
+    const dismissed = typeof window !== 'undefined'
+      ? localStorage.getItem(`profile-setup-dismissed-${currentUser.id}`)
+      : null;
+    if (isDefaultName && !dismissed) {
+      setShowProfileSetup(true);
+    }
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (currentUser?.adminId) {
@@ -604,6 +623,16 @@ const UserDashboard = () => {
           <GroupInfoPanel group={activeGroup} open={groupInfoOpen} onOpenChange={setGroupInfoOpen} />
         )}
       </div>
+      {/* First-login profile setup */}
+      <SetupProfileModal
+        open={showProfileSetup}
+        onClose={() => {
+          setShowProfileSetup(false);
+          if (currentUser) {
+            localStorage.setItem(`profile-setup-dismissed-${currentUser.id}`, '1');
+          }
+        }}
+      />
     </div>
   );
 };

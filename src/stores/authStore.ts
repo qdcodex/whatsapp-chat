@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@/types';
+import { socketClient } from '@/lib/socketClient';
 
 interface AuthState {
   currentUser: User | null;
@@ -21,6 +22,7 @@ interface AuthState {
   getMaskedPhone: (userId: string) => string;
   updateAvatar: (userId: string, avatar: string) => Promise<void>;
   updateUser: (userId: string, data: Partial<Pick<User, 'displayName' | 'avatar' | 'phone' | 'password'>>) => Promise<void>;
+  handleRemoteProfileUpdate: (data: { userId: string; displayName?: string; avatar?: string }) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -130,6 +132,26 @@ export const useAuthStore = create<AuthState>()(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
     });
+    // Broadcast name/avatar change so all workspace members see it in real-time
+    if (patch.displayName || patch.avatar) {
+      socketClient.emit('user:profile-updated', {
+        userId,
+        displayName: patch.displayName,
+        avatar: patch.avatar,
+      });
+    }
+  },
+
+  handleRemoteProfileUpdate: ({ userId, displayName, avatar }) => {
+    const patch: Partial<User> = {};
+    if (displayName) patch.displayName = displayName;
+    if (avatar)      patch.avatar      = avatar;
+    if (!Object.keys(patch).length) return;
+    set(s => ({
+      users: s.users.map(u => u.id === userId ? { ...u, ...patch } : u),
+      // Also update currentUser if it's the same person (e.g. two tabs)
+      currentUser: s.currentUser?.id === userId ? { ...s.currentUser, ...patch } : s.currentUser,
+    }));
   },
 }),
     {

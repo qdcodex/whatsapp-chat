@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Message, MessageStatus } from '@/types';
 import { broadcastChannelSync } from '@/lib/broadcastChannelSync';
 import { socketClient } from '@/lib/socketClient';
+import { useAuthStore } from '@/stores/authStore';
 
 const isNotExpired = (timestamp: number, days: number) =>
   Date.now() - timestamp < days * 24 * 60 * 60 * 1000;
@@ -213,8 +214,14 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       get().handleRemoteMessage(data);
     };
 
+    // Profile updates from other users (name / avatar changes)
+    const handleProfileUpdatedEvent = (data: { userId: string; displayName?: string; avatar?: string }) => {
+      useAuthStore.getState().handleRemoteProfileUpdate(data);
+    };
+
     socketClient.on('message:deleted', handleDeletedEvent);
     socketClient.on('message:new', handleNewMessageEvent);
+    socketClient.on('user:profile-updated', handleProfileUpdatedEvent);
 
     // Only refresh on page visibility change, not constantly
     const handleVisibilityChange = () => {
@@ -234,6 +241,7 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       socketClient.off('message:deleted', handleDeletedEvent);
       socketClient.off('message:new', handleNewMessageEvent);
+      socketClient.off('user:profile-updated', handleProfileUpdatedEvent);
     };
   },
 
