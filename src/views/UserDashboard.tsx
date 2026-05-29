@@ -525,43 +525,74 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Empty state — shown on desktop when no chat is selected */}
+        {/* Empty state — full-bleed ad or placeholder when no chat is selected */}
         {!dmTarget && !activeGroup && (
-          <div className="hidden md:flex flex-col flex-1 items-center justify-center gap-4 bg-wa-sidebar-header">
-            {workspace?.adEnabled && (workspace.adTitle || workspace.adText || workspace.adImageUrl) ? (
-              <div className="w-full max-w-sm px-6">
-                <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-                  {workspace.adImageUrl && (
-                    <img
-                      src={workspace.adImageUrl}
-                      alt={workspace.adTitle || 'Ad'}
-                      className="w-full h-40 object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
+          workspace?.adEnabled && workspace.adImageUrl ? (
+            /* Full-bleed hero — image covers the entire empty panel */
+            <div className="hidden md:block relative flex-1 overflow-hidden bg-black">
+              <img
+                src={workspace.adImageUrl}
+                alt={workspace.adTitle || 'Sponsored'}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+
+              {/* "Sponsored" chip — top-right */}
+              <span className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-1 rounded-full uppercase tracking-wider">
+                Sponsored
+              </span>
+
+              {/* Gradient + text — bottom */}
+              {(workspace.adTitle || workspace.adText || workspace.adLinkUrl) && (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-20 pb-8 px-8">
+                  {workspace.adTitle && (
+                    <p className="text-white font-bold text-xl leading-tight mb-1">
+                      {workspace.adTitle}
+                    </p>
                   )}
-                  <div className="p-4 space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sponsored</p>
-                    {workspace.adTitle && <p className="font-semibold text-sm">{workspace.adTitle}</p>}
-                    {workspace.adText && <p className="text-xs text-muted-foreground">{workspace.adText}</p>}
-                    {workspace.adLinkUrl && (
-                      <a
-                        href={workspace.adLinkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline"
-                      >
-                        Learn more <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
+                  {workspace.adText && (
+                    <p className="text-white/80 text-sm mb-3 line-clamp-2">
+                      {workspace.adText}
+                    </p>
+                  )}
+                  {workspace.adLinkUrl && (
+                    <a
+                      href={workspace.adLinkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 bg-white text-black text-xs font-semibold px-4 py-2 rounded-full hover:bg-white/90 transition-colors"
+                    >
+                      Learn more <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
+              )}
+            </div>
+          ) : workspace?.adEnabled && (workspace.adTitle || workspace.adText) ? (
+            /* No image — centered text card */
+            <div className="hidden md:flex flex-col flex-1 items-center justify-center bg-wa-sidebar-header">
+              <div className="max-w-xs text-center space-y-2 px-8">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sponsored</p>
+                {workspace.adTitle && <p className="font-semibold text-base">{workspace.adTitle}</p>}
+                {workspace.adText && <p className="text-sm text-muted-foreground">{workspace.adText}</p>}
+                {workspace.adLinkUrl && (
+                  <a
+                    href={workspace.adLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-1 hover:underline"
+                  >
+                    Learn more <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <p className="text-sm">Select a chat to start messaging</p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* Default — no ad configured */
+            <div className="hidden md:flex flex-col flex-1 items-center justify-center bg-wa-sidebar-header">
+              <p className="text-sm text-muted-foreground">Select a chat to start messaging</p>
+            </div>
+          )
         )}
 
         <MessageFeed
