@@ -28,6 +28,7 @@ interface PaymentState {
   notifications_unreadCount: () => number;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  clearNotifications: () => Promise<void>;
 }
 
 export const usePaymentStore = create<PaymentState>()((set, get) => ({
@@ -105,6 +106,10 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ adminId, adminName, workspaceId, note }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error || 'Failed to record payment');
+    }
     const { subscription, notification } = await res.json();
     set(s => ({
       subscriptions: s.subscriptions.some(sub => sub.adminId === adminId)
@@ -116,8 +121,8 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
 
   getPaymentStatus: (adminId) => {
     const sub = get().subscriptions.find(s => s.adminId === adminId);
-    if (!sub || sub.monthlyAmount === 0) return 'not_set';
-    if (!sub.nextDueAt) return 'not_set';
+    // Not required if no subscription, payment explicitly stopped, or fee never set
+    if (!sub || sub.paymentActive === false || sub.monthlyAmount === 0 || !sub.nextDueAt) return 'not_set';
     const daysRemaining = Math.ceil((sub.nextDueAt - Date.now()) / MS_PER_DAY);
     if (daysRemaining < 0) return 'overdue';
     if (daysRemaining <= 7) return 'expiring_soon';
@@ -152,5 +157,10 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
   markAllNotificationsRead: async () => {
     set(s => ({ notifications: s.notifications.map(n => ({ ...n, read: true })) }));
     await fetch('/api/payments/notifications', { method: 'PATCH' });
+  },
+
+  clearNotifications: async () => {
+    set({ notifications: [] });
+    await fetch('/api/payments/notifications', { method: 'DELETE' });
   },
 }));

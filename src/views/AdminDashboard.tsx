@@ -267,10 +267,14 @@ const AdminDashboard = () => {
     toast.success(`Auto-delete set to ${days} days`);
   };
 
-  const handlePayNow = () => {
-    ensureSubscription(currentUser.id, currentUser.displayName, workspaceId!);
-    recordPayment(currentUser.id, currentUser.displayName, workspaceId!);
-    toast.success('Payment recorded and super admin notified');
+  const handlePayNow = async () => {
+    try {
+      await ensureSubscription(currentUser.id, currentUser.displayName, workspaceId!);
+      await recordPayment(currentUser.id, currentUser.displayName, workspaceId!);
+      toast.success('Payment recorded — super admin notified');
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Failed to record payment');
+    }
   };
 
   const isUserChatEnabled = (user: User) => {
@@ -576,14 +580,20 @@ const AdminDashboard = () => {
                             {sub.nextDueAt && ` · Next due: ${format(new Date(sub.nextDueAt), 'MMM d, yyyy')}`}
                           </p>
                         )}
-                        <Button
-                          size="sm"
-                          className="w-full h-8 text-xs"
-                          onClick={handlePayNow}
-                        >
-                          <CreditCard className="w-3.5 h-3.5 mr-1.5" />
-                          Pay Now
-                        </Button>
+                        {sub?.paymentActive === false ? (
+                          <p className="text-xs text-center text-muted-foreground py-1">
+                            Payment not currently required
+                          </p>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="w-full h-8 text-xs"
+                            onClick={handlePayNow}
+                          >
+                            <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+                            Pay Now
+                          </Button>
+                        )}
                       </div>
                     );
                   })()}

@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ad
     const data = await req.json();
     const sub = await AdminSubscriptionModel.findOneAndUpdate(
       { adminId },
-      data,
+      { $set: data },
       { upsert: true, returnDocument: 'after' as const }
     ).lean().exec();
     return NextResponse.json(sub);

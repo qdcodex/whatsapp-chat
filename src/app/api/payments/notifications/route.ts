@@ -26,3 +26,11 @@ export async function PATCH() {
     return NextResponse.json({ ok: true });
   });
 }
+
+export async function DELETE() {
+  return withDB(async () => {
+    await connectDB();
+    await PaymentNotificationModel.deleteMany({});
+    return NextResponse.json({ ok: true });
+  });
+}

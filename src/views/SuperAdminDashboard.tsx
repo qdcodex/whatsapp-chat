@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useGroupStore } from '@/stores/groupStore';
-import { useNotificationStore } from '@/stores/notificationStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { format } from 'date-fns';
 import {
@@ -30,12 +29,12 @@ const SuperAdminDashboard = () => {
   const { workspaces, createWorkspace, deleteWorkspace, toggleGlobalChat, toggleMessaging, getWorkspaceByAdmin } = useWorkspaceStore();
   const { messages } = useMessageStore();
   const { groupCreationRequests, approveGroupCreationRequest, rejectGroupCreationRequest, getPendingGroupCreationCount } = useGroupStore();
-  const { paymentNotifications, markAllPaymentNotificationsRead, markPaymentNotificationRead, getUnreadPaymentCount, clearPaymentNotifications } = useNotificationStore();
   const {
     notifications: payNotifications,
     notifications_unreadCount,
     markNotificationRead,
     markAllNotificationsRead,
+    clearNotifications,
     getAllSubscriptions,
     getSubscription,
     ensureSubscription,
@@ -702,9 +701,8 @@ const SuperAdminDashboard = () => {
                 </h2>
                 {payNotifications.length > 0 && (
                   <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7"
-                    onClick={() => usePaymentStore.getState().notifications.length > 0 &&
-                      usePaymentStore.setState({ notifications: [] })}>
-                    Clear
+                    onClick={() => clearNotifications()}>
+                    Clear All
                   </Button>
                 )}
               </div>
