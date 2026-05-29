@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
@@ -24,7 +24,7 @@ import {
   LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, ToggleLeft, ToggleRight,
   Search, UserPlus, Clock, CreditCard, CheckCircle, AlertCircle, AlertTriangle,
-  Megaphone, ExternalLink,
+  Megaphone, ExternalLink, Upload, ImageIcon, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -72,6 +72,7 @@ const AdminDashboard = () => {
   const [adTitleInput, setAdTitleInput] = useState('');
   const [adTextInput, setAdTextInput] = useState('');
   const [adLinkInput, setAdLinkInput] = useState('');
+  const adImageFileRef = useRef<HTMLInputElement>(null);
   const [deleteUserConfirm, setDeleteUserConfirm] = useState<string | null>(null);
   const [deleteUserName, setDeleteUserName] = useState<string>('');
   const [editingDisplayName, setEditingDisplayName] = useState(currentUser?.displayName || '');
@@ -220,6 +221,31 @@ const AdminDashboard = () => {
       setAdLinkInput(workspace.adLinkUrl || '');
     }
     setSettingsOpen(open);
+  };
+
+  const handleAdImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB');
+      return;
+    }
+    // Compress via canvas before storing as base64 to keep DB size small
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 800;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      setAdImageInput(canvas.toDataURL('image/jpeg', 0.75));
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
+    // Reset input so re-selecting the same file still fires onChange
+    e.target.value = '';
   };
 
   const handleSaveAd = () => {
@@ -405,13 +431,51 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
 
+                    {/* Hidden file input */}
+                    <input
+                      ref={adImageFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAdImageSelect}
+                    />
+
                     <div className="space-y-2">
-                      <Input
-                        placeholder="Image URL (optional)"
-                        value={adImageInput}
-                        onChange={(e) => setAdImageInput(e.target.value)}
-                        className="h-8 text-sm"
-                      />
+                      {/* Image upload area */}
+                      {adImageInput ? (
+                        <div className="relative w-full h-28 rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={adImageInput}
+                            alt="Ad"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => adImageFileRef.current?.click()}
+                              className="bg-white/90 text-black rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1.5"
+                            >
+                              <Upload className="w-3 h-3" /> Change
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAdImageInput('')}
+                              className="bg-destructive/90 text-white rounded-full p-1.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => adImageFileRef.current?.click()}
+                          className="w-full h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors flex flex-col items-center justify-center gap-1.5 text-muted-foreground"
+                        >
+                          <ImageIcon className="w-5 h-5" />
+                          <span className="text-xs">Upload image (max 2MB)</span>
+                        </button>
+                      )}
                       <Input
                         placeholder="Title"
                         value={adTitleInput}

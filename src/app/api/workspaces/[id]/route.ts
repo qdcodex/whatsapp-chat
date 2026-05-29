@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, withDB } from '@/lib/mongodb';
 import { WorkspaceModel } from '@/lib/models/Workspace';
 
+
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withDB(async () => {
     const { id } = await params;
