@@ -41,6 +41,7 @@ const SuperAdminDashboard = () => {
     setMonthlyAmount,
     setBillingCycleDays,
     togglePaymentActive,
+    recordPayment,
     getPaymentStatus,
     getDaysRemaining,
     getDaysOverdue,
@@ -56,6 +57,8 @@ const SuperAdminDashboard = () => {
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
   const [cycleInputs, setCycleInputs] = useState<Record<string, string>>({});
+  const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+  const [recordingPayment, setRecordingPayment] = useState<string | null>(null);
 
   if (!currentUser || currentUser.role !== 'superadmin') {
     router.push('/');
@@ -654,6 +657,43 @@ const SuperAdminDashboard = () => {
                             }}
                           >
                             Set Days
+                          </Button>
+                        </div>
+
+                        {/* Record payment on behalf of admin */}
+                        <div className="flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
+                          <Input
+                            placeholder="Note (e.g. Bank transfer, Cash)"
+                            value={noteInputs[admin.id] ?? ''}
+                            onChange={(e) => setNoteInputs(prev => ({ ...prev, [admin.id]: e.target.value }))}
+                            className="h-8 text-xs"
+                            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs shrink-0 bg-green-600 hover:bg-green-700 text-white"
+                            disabled={recordingPayment === admin.id}
+                            onClick={async () => {
+                              setRecordingPayment(admin.id);
+                              try {
+                                await ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
+                                await recordPayment(
+                                  admin.id,
+                                  admin.displayName,
+                                  admin.workspaceId!,
+                                  noteInputs[admin.id]?.trim() || undefined,
+                                );
+                                setNoteInputs(prev => ({ ...prev, [admin.id]: '' }));
+                                toast.success(`Payment recorded for ${admin.displayName}`);
+                              } catch (err: unknown) {
+                                toast.error((err as Error)?.message || 'Failed to record payment');
+                              } finally {
+                                setRecordingPayment(null);
+                              }
+                            }}
+                          >
+                            <Check className="w-3 h-3 mr-1" />
+                            {recordingPayment === admin.id ? 'Saving…' : 'Record Payment'}
                           </Button>
                         </div>
 
