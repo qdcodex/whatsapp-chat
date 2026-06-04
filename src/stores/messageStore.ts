@@ -56,11 +56,20 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
     const newMsg: Message = { ...msg, id: generateId(), timestamp: Date.now(), status: 'sent' };
     set(s => ({ messages: [...s.messages, newMsg] }));
 
+    // Persist to DB
     fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg),
     });
+
+    // Broadcast via socket for instant delivery — server relays as message:new
+    // to all sockets in the workspace room. handleRemoteMessage deduplicates
+    // on the sender's side so no double-add occurs.
+    socketClient.emit('message:send', newMsg);
+
+    // Also sync to sender's other open tabs via BroadcastChannel
+    broadcastChannelSync.broadcastMessage('add', newMsg);
 
     // Auto-deliver
     setTimeout(() => {
