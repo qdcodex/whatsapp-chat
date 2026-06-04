@@ -106,17 +106,22 @@ export function useOnlineStatus({
       emit('request:online-users');
     });
 
-    // Also try immediately in case socket is already connected
+    // Immediate attempt if socket is already connected
     emit('request:online-users');
 
     // On mobile PWA: re-request when the app comes back to the foreground
-    // (socket may have reconnected while backgrounded)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         emit('request:online-users');
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Periodic fallback: if a reconnect event was missed (e.g. brief network
+    // drop on mobile) this ensures the list re-syncs within 30 seconds
+    const refreshInterval = setInterval(() => {
+      emit('request:online-users');
+    }, 30000);
 
     return () => {
       unsubOnline();
@@ -126,6 +131,7 @@ export function useOnlineStatus({
       unsubOnlineUsers();
       unsubConnected();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(refreshInterval);
     };
   }, [enabled, userId, workspaceId, on, emit]);
 

@@ -219,9 +219,15 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       useAuthStore.getState().handleRemoteProfileUpdate(data);
     };
 
+    // Chat-enable setting changed by admin — update currentUser immediately
+    const handleSettingsUpdatedEvent = (data: { userId: string; chatEnabled?: boolean }) => {
+      useAuthStore.getState().handleSettingsUpdate(data);
+    };
+
     socketClient.on('message:deleted', handleDeletedEvent);
     socketClient.on('message:new', handleNewMessageEvent);
     socketClient.on('user:profile-updated', handleProfileUpdatedEvent);
+    socketClient.on('user:settings-updated', handleSettingsUpdatedEvent);
 
     // Only refresh on page visibility change, not constantly
     const handleVisibilityChange = () => {
@@ -242,6 +248,7 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       socketClient.off('message:deleted', handleDeletedEvent);
       socketClient.off('message:new', handleNewMessageEvent);
       socketClient.off('user:profile-updated', handleProfileUpdatedEvent);
+      socketClient.off('user:settings-updated', handleSettingsUpdatedEvent);
     };
   },
 

@@ -96,6 +96,14 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       });
     });
 
+    // Settings changes (e.g. chatEnabled toggled by admin) — sent only to the target user
+    socket.on('user:settings-updated', (data: { userId: string; chatEnabled?: boolean }) => {
+      io?.to(`user:${data.userId}`).emit('user:settings-updated', {
+        userId: data.userId,
+        chatEnabled: data.chatEnabled,
+      });
+    });
+
     // Typing indicators with auto-stop timeout
     const typingTimeouts = new Map<string, NodeJS.Timeout>();
 

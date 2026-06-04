@@ -23,6 +23,7 @@ interface AuthState {
   updateAvatar: (userId: string, avatar: string) => Promise<void>;
   updateUser: (userId: string, data: Partial<Pick<User, 'displayName' | 'avatar' | 'phone' | 'password'>>) => Promise<void>;
   handleRemoteProfileUpdate: (data: { userId: string; displayName?: string; avatar?: string }) => void;
+  handleSettingsUpdate: (data: { userId: string; chatEnabled?: boolean }) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -39,7 +40,11 @@ export const useAuthStore = create<AuthState>()(
     const res = await fetch('/api/users');
     if (!res.ok) return;
     const users: User[] = await res.json();
-    set({ users, isInitialized: true });
+    // Sync currentUser from fresh server data so persisted values (chatEnabled, etc.)
+    // are always up-to-date when the app loads
+    const currentUser = get().currentUser;
+    const freshCurrentUser = currentUser ? users.find(u => u.id === currentUser.id) ?? currentUser : null;
+    set({ users, isInitialized: true, currentUser: freshCurrentUser });
   },
 
   login: (username, password) => {
@@ -93,6 +98,9 @@ export const useAuthStore = create<AuthState>()(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatEnabled }),
     });
+    // Notify the affected user in real-time so their MessageComposer
+    // shows/hides immediately without needing a page refresh
+    socketClient.emit('user:settings-updated', { userId, chatEnabled });
   },
 
   getUsersByAdmin: (adminId) => get().users.filter(u => u.role === 'user' && u.adminId === adminId),
@@ -140,6 +148,16 @@ export const useAuthStore = create<AuthState>()(
         avatar: patch.avatar,
       });
     }
+  },
+
+  handleSettingsUpdate: ({ userId, chatEnabled }) => {
+    set(s => ({
+      users: s.users.map(u => u.id === userId ? { ...u, chatEnabled } : u),
+      // If this IS the current user (user's own session), update currentUser too
+      currentUser: s.currentUser?.id === userId
+        ? { ...s.currentUser, chatEnabled }
+        : s.currentUser,
+    }));
   },
 
   handleRemoteProfileUpdate: ({ userId, displayName, avatar }) => {
