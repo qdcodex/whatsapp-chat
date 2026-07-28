@@ -194,9 +194,12 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
           const atLimit = memberCount >= GROUP_MEMBER_LIMIT;
           return (
             <div key={group.id}>
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => onGroupSelect ? onGroupSelect(group.id) : setExpandedGroup(expandedGroup === group.id ? null : group.id)}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 ${activeGroupId === group.id ? 'bg-secondary' : ''}`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGroupSelect ? onGroupSelect(group.id) : setExpandedGroup(expandedGroup === group.id ? null : group.id); } }}
+                className={`w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors border-b border-border/50 cursor-pointer ${activeGroupId === group.id ? 'bg-secondary' : ''}`}
               >
                 <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5 text-primary" />
@@ -244,7 +247,7 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-              </button>
+              </div>
               {expandedGroup === group.id && (
                 <div className="bg-secondary/30 px-4 py-2 space-y-1 border-b border-border/50">
                   {group.description && (

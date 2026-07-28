@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
@@ -60,8 +60,13 @@ const SuperAdminDashboard = () => {
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
   const [recordingPayment, setRecordingPayment] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'superadmin') {
+      router.replace('/');
+    }
+  }, [currentUser, router]);
+
   if (!currentUser || currentUser.role !== 'superadmin') {
-    router.push('/');
     return null;
   }
 
