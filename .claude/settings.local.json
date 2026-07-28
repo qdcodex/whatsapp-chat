@@ -60,7 +60,12 @@
       "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|svg|webp|ico\\)$\")",
       "Bash(node \"C:\\\\Users\\\\Lijin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F--Personal-Work-2026-Personal-broadcast-hub\\\\a1716ac3-7635-4828-9ea4-dfc54e95e47e\\\\scratchpad\\\\gen-icons.js\")",
       "mcp__claude-in-chrome__tabs_create_mcp",
-      "Bash(powershell -Command \"Stop-Process -Id 14900 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 14900 -Force\")",
+      "Bash(powershell -Command \"Get-Process -Id 1868 | Select-Object Id,ProcessName,Path,StartTime\")",
+      "Bash(PORT=3011 timeout 12 npx tsx server.ts)",
+      "Bash(curl -s -m 20 -o /dev/null -w \"HTTP:%{http_code}\\\\n\" http://localhost:3011/)",
+      "mcp__claude-in-chrome__javascript_tool",
+      "Bash(powershell -Command \"Stop-Process -Id 19472 -Force\")"
     ]
   }
 }

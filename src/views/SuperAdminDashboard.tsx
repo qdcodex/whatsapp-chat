@@ -9,7 +9,7 @@ import { useGroupStore } from '@/stores/groupStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { format } from 'date-fns';
 import {
-  Radio, LogOut, Plus, Trash2, Users, MessageSquare, Shield, Phone, Search,
+  LogOut, Plus, Trash2, Users, MessageSquare, Shield, Phone, Search,
   Bell, BellOff, CheckCircle, XCircle, CreditCard, Check,
   AlertCircle, AlertTriangle, Clock, ChevronDown, ChevronUp, DollarSign,
   ToggleLeft, ToggleRight, MessageCircle, Pencil,
@@ -164,8 +164,8 @@ const SuperAdminDashboard = () => {
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Radio className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden">
+              <img src="/logo.png" alt="BroadcastHub" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-bold text-sm sm:text-base text-foreground">BroadcastHub</h1>

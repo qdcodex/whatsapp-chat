@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { MessageCircle, Lock, User, Phone, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Phone, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,8 +80,8 @@ const Login = () => {
       {/* Top decorative area */}
       <div className="h-52 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary-foreground/10 mb-4">
-            <MessageCircle className="w-10 h-10 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full overflow-hidden mb-4">
+            <img src="/logo.png" alt="BroadcastHub" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-wa-header-fg">ChatApp</h1>
           <p className="text-wa-header-fg/60 mt-1 text-sm">Simple. Reliable. Private.</p>
