@@ -12,7 +12,15 @@
       "Bash(git push *)",
       "Bash(python -c \"import json; d=json.load\\(open\\('package.json'\\)\\); print\\('deps:', 'tsx' in d.get\\('dependencies',{}\\)\\); print\\('devDeps:', 'tsx' in d.get\\('devDependencies',{}\\)\\)\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(bun install *)",
+      "Bash(where bun *)",
+      "Bash(where npm *)",
+      "PowerShell(Get-Command bun -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -Recurse -Directory)",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }

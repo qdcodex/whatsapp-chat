@@ -85,7 +85,7 @@ const GroupInfoPanel = ({ group, open, onOpenChange }: GroupInfoPanelProps) => {
               const isAdmin = memberId === group.adminId;
               const online = isOnline(memberId);
               const phone = member.phone;
-              const displayPhone = isPrivileged ? phone : getMaskedPhone(memberId);
+              const displayPhone = isPrivileged || isAdmin ? phone : getMaskedPhone(memberId);
               const muted = isMemberMuted(group.id, memberId);
 
               return (

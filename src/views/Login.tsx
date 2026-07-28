@@ -142,7 +142,6 @@ const Login = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">Sign In</Button>
-              <p className="text-xs text-center text-muted-foreground">Default: superadmin / admin123</p>
             </form>
           ) : otpStep === 'phone' ? (
             <form onSubmit={handlePhoneSubmit} className="space-y-4">
