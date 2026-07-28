@@ -53,7 +53,14 @@
       "mcp__claude-in-chrome__read_console_messages",
       "Bash(curl -s -m 3 -o /dev/null -w \"port 3000: %{http_code}\\\\n\" http://localhost:3000/)",
       "mcp__claude-in-chrome__tabs_close_mcp",
-      "Bash(powershell -Command \"Stop-Process -Id 3596 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 3596 -Force\")",
+      "Bash(find \"C:/Users/Lijin/AppData/Local/Temp/claude\" -newer \"C:/Users/Lijin/AppData/Local/Temp\" -iname \"*.png\" -mmin -30 2>/dev/null | head -20)",
+      "Bash(find \"C:/Users/Lijin/AppData/Local/Temp\" -iname \"*.png\" -mmin -60 2>/dev/null | head -20; echo \"---\"; find \"C:/Users/Lijin\" -maxdepth 4 -iname \"*.png\" -mmin -30 2>/dev/null | head -20)",
+      "Bash(xargs -I{} sh -c 'echo \"{}\"; stat -c \"%y\" \"{}\"')",
+      "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|svg|webp|ico\\)$\")",
+      "Bash(node \"C:\\\\Users\\\\Lijin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F--Personal-Work-2026-Personal-broadcast-hub\\\\a1716ac3-7635-4828-9ea4-dfc54e95e47e\\\\scratchpad\\\\gen-icons.js\")",
+      "mcp__claude-in-chrome__tabs_create_mcp",
+      "Bash(powershell -Command \"Stop-Process -Id 14900 -Force\")"
     ]
   }
 }
