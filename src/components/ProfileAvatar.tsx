@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { uploadImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -41,20 +42,21 @@ const ProfileAvatar = ({
   const fileRef = useRef<HTMLInputElement>(null);
   const { updateAvatar } = useAuthStore();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Image must be under 2MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      updateAvatar(userId, result);
-      toast.success('Profile picture updated!');
-    };
-    reader.readAsDataURL(file);
+    const uploadToastId = toast.loading('Uploading photo…');
+    try {
+      const url = await uploadImage(file, 'avatars');
+      await updateAvatar(userId, url);
+      toast.success('Profile picture updated!', { id: uploadToastId });
+    } catch {
+      toast.error('Failed to upload image', { id: uploadToastId });
+    }
   };
 
   return (

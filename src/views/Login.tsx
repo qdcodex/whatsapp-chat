@@ -83,7 +83,7 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full overflow-hidden mb-4">
             <img src="/logo.png" alt="BroadcastHub" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-wa-header-fg">ChatApp</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-wa-header-fg">ME2 App</h1>
           <p className="text-wa-header-fg/60 mt-1 text-sm">Simple. Reliable. Private.</p>
         </div>
       </div>

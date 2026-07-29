@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { uploadImage } from '@/lib/uploadImage';
 import { toast } from 'sonner';
 
 interface SetupProfileModalProps {
@@ -19,6 +20,7 @@ export default function SetupProfileModal({ open, onClose }: SetupProfileModalPr
   const { currentUser, updateUser, updateAvatar } = useAuthStore();
   const [name, setName] = useState(currentUser?.displayName || '');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(currentUser?.avatar || null);
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +38,7 @@ export default function SetupProfileModal({ open, onClose }: SetupProfileModalPr
       canvas.height = Math.round(img.height * ratio);
       canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
       setAvatarPreview(canvas.toDataURL('image/jpeg', 0.8));
+      canvas.toBlob((blob) => setAvatarBlob(blob), 'image/jpeg', 0.8);
       URL.revokeObjectURL(url);
     };
     img.src = url;
@@ -47,8 +50,17 @@ export default function SetupProfileModal({ open, onClose }: SetupProfileModalPr
     if (!currentUser) return;
     setSaving(true);
     try {
-      if (avatarPreview && avatarPreview !== currentUser.avatar) {
-        await updateAvatar(currentUser.id, avatarPreview);
+      if (avatarBlob) {
+        const uploadToastId = toast.loading('Uploading photo…');
+        try {
+          const url = await uploadImage(avatarBlob, 'avatars');
+          await updateAvatar(currentUser.id, url);
+          toast.dismiss(uploadToastId);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Photo upload failed', { id: uploadToastId });
+          setSaving(false);
+          return;
+        }
       }
       await updateUser(currentUser.id, { displayName: name.trim() });
       toast.success('Profile saved!');

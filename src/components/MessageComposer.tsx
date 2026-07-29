@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Reply } from 'lucide-react';
+import { Send, Smile, Paperclip, Mic, X, Camera, FileText, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { toast } from 'sonner';
+import { uploadImage } from '@/lib/uploadImage';
 import type { Message } from '@/types';
 
 interface MessageComposerProps {
@@ -17,6 +18,9 @@ interface MessageComposerProps {
 const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendComplete }: MessageComposerProps) => {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -63,19 +67,45 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
     if (replyingTo) textareaRef.current?.focus();
   }, [replyingTo]);
 
+  const selectImageFile = (file: File) => {
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageFile(null);
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    selectImageFile(file);
     setShowAttach(false);
   };
 
-  const handleSend = () => {
-    if (!text.trim() && !imagePreview) return;
+  const handleSend = async () => {
+    if (!text.trim() && !imageFile) return;
     const msgText = text.trim() || undefined;
-    const msgImage = imagePreview || undefined;
+
+    let msgImage: string | undefined;
+    if (imageFile) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      const uploadToastId = toast.loading('Uploading image…');
+      try {
+        msgImage = await uploadImage(imageFile, 'messages', setUploadProgress);
+        toast.success('Image uploaded', { id: uploadToastId });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Image upload failed', { id: uploadToastId });
+        setIsUploading(false);
+        setUploadProgress(0);
+        return;
+      }
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
 
     // Blur FIRST — commits any pending mobile IME / predictive-text composition
     // so the browser doesn't restore the old value after React clears the state
@@ -83,7 +113,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
 
     onSend(msgText, msgImage);
     setText('');
-    setImagePreview(null);
+    clearImage();
     setShowEmoji(false);
 
     if (textareaRef.current) {
@@ -253,9 +283,16 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
       {imagePreview && (
         <div className="relative inline-block mb-1.5 ml-1">
           <img src={imagePreview} alt="Preview" className="h-20 rounded-lg object-cover" />
+          {isUploading && (
+            <div className="absolute inset-0 rounded-lg bg-black/50 flex flex-col items-center justify-center gap-1">
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+              <span className="text-[10px] font-medium text-white">{uploadProgress}%</span>
+            </div>
+          )}
           <button
-            onClick={() => setImagePreview(null)}
-            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+            onClick={clearImage}
+            disabled={isUploading}
+            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 disabled:opacity-50"
           >
             <X className="w-3 h-3" />
           </button>
@@ -328,9 +365,7 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
                 for (let i = 0; i < items.length; i++) {
                   if (items[i].type.indexOf('image') !== -1) {
                     const file = items[i].getAsFile();
-                    const reader = new FileReader();
-                    reader.onloadend = () => setImagePreview(reader.result as string);
-                    reader.readAsDataURL(file);
+                    if (file) selectImageFile(file);
                   }
                 }
               }}
@@ -357,8 +392,9 @@ const MessageComposer = ({ onSend, onTyping, replyingTo, onCancelReply, onSendCo
               size="icon"
               className="shrink-0 rounded-full h-11 w-11 bg-primary hover:bg-primary/90"
               onClick={handleSend}
+              disabled={isUploading}
             >
-              <Send className="w-5 h-5" />
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </Button>
           ) : (
             <Button

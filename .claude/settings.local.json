@@ -65,7 +65,31 @@
       "Bash(PORT=3011 timeout 12 npx tsx server.ts)",
       "Bash(curl -s -m 20 -o /dev/null -w \"HTTP:%{http_code}\\\\n\" http://localhost:3011/)",
       "mcp__claude-in-chrome__javascript_tool",
-      "Bash(powershell -Command \"Stop-Process -Id 19472 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 19472 -Force\")",
+      "Bash(curl -s -m 20 -o /dev/null -w \"HTTP:%{http_code}\\\\n\" http://localhost:3011/login)",
+      "Bash(powershell -Command \"Stop-Process -Id 19220 -Force\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -m 15 -X POST http://localhost:3011/api/upload -F \"file=@F:/Personal Work/2026/Personal/broadcast-hub/public/icon-512.png\" -F \"folder=messages\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(echo \"not an image\")",
+      "Bash(curl -s -m 10 -X POST http://localhost:3011/api/upload -F \"file=@/tmp/fake.txt;type=text/plain\" -F \"folder=messages\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 -X POST http://localhost:3011/api/upload -F \"folder=messages\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 -X POST http://localhost:3011/api/upload -F \"file=@/tmp/fake.txt\" -F \"folder=messages\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "mcp__claude-in-chrome__read_network_requests",
+      "Bash(powershell -Command \"Stop-Process -Id 24264 -Force\")",
+      "Bash(git check-ignore *)",
+      "Bash(curl -s -m 20 -X POST http://localhost:3011/api/upload -F \"file=@F:/Personal Work/2026/Personal/broadcast-hub/public/icon-512.png\" -F \"folder=messages\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP:%{http_code} content-type:%{content_type} size:%{size_download}\\\\n\" \"https://res.cloudinary.com/digrqhrna/image/upload/v1785331779/broadcast-hub/messages/cmam7cywgmuzmgjdlsbd.png\")",
+      "Bash(powershell -Command \"Stop-Process -Id 9860 -Force\")",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:3011/api/messages?workspaceId=ligin)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const m=JSON.parse\\(d\\);const last=m[m.length-1];console.log\\(JSON.stringify\\({text:last.text,imageUrl:last.imageUrl},null,2\\)\\)}\\)\")",
+      "Bash(curl -s -X DELETE http://localhost:3011/api/messages/9v1nykionbt -o /dev/null -w \"delete: %{http_code}\\\\n\")",
+      "Bash(powershell -Command \"Stop-Process -Id 14808 -Force\")",
+      "Bash(kill -9 1747)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const u=JSON.parse\\(d\\);console.log\\(u.filter\\(x=>x.role==='user'\\).map\\(x=>\\({id:x.id,username:x.username,adminId:x.adminId,workspaceId:x.workspaceId}\\)\\)\\)}\\)\")",
+      "Bash(curl -s -X PATCH http://localhost:3011/api/workspaces/lx53o1aj1o8 -H \"Content-Type: application/json\" -d '{\"adImageUrl\":\"https://res.cloudinary.com/digrqhrna/image/upload/v1785331779/broadcast-hub/messages/cmam7cywgmuzmgjdlsbd.png\"}' -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -X PATCH http://localhost:3011/api/workspaces/lx53o1aj1o8 -H \"Content-Type: application/json\" -d '{\"adEnabled\":false,\"adImageUrl\":\"\",\"adTitle\":\"\",\"adText\":\"\",\"adLinkUrl\":\"\"}' -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(powershell -Command \"Stop-Process -Id 23876 -Force\")"
     ]
   }
 }
