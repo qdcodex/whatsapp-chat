@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB, withDB } from "@/lib/mongodb";
 import { GroupCreationRequestModel } from "@/lib/models/GroupCreationRequest";
 import { GroupModel } from "@/lib/models/Group";
+import { requireSession } from "@/lib/auth";
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 const generateSlug = (name: string) =>
@@ -11,9 +12,14 @@ const generateSlug = (name: string) =>
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return withDB(async () => {
+    const auth = await requireSession(req, ["superadmin"]);
+    if (auth instanceof NextResponse) return auth;
     const { id } = await params;
     await connectDB();
     const { status } = await req.json();
+    if (status !== "approved" && status !== "rejected") {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
 
     const gcr = await GroupCreationRequestModel.findOne({ id });
     if (!gcr || gcr.status !== "pending")

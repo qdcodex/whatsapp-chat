@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useGroupStore } from '@/stores/groupStore';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { Radio, Users, Send, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,20 +9,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
+import { requestOtp } from '@/lib/otpClient';
 
-const OTP_CODE = '1234';
+interface PublicGroup { name: string; description?: string; memberCount: number }
 
 const JoinGroup = () => {
   const { groupSlug } = useParams() as { groupSlug: string };
-  const router = useRouter();
-  const { getGroupBySlug, addMember } = useGroupStore();
-  const { createUser } = useAuthStore();
+  const joinGroup = useAuthStore((s) => s.joinGroup);
+  const [group, setGroup] = useState<PublicGroup | null | undefined>(undefined);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'form' | 'otp' | 'done'>('form');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpDevMode, setOtpDevMode] = useState(false);
 
-  const group = getGroupBySlug(groupSlug || '');
+  // Visitors aren't logged in, so only the group's public info is loaded
+  useEffect(() => {
+    fetch(`/api/public/groups/${encodeURIComponent(groupSlug || '')}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(setGroup)
+      .catch(() => setGroup(null));
+  }, [groupSlug]);
+
+  if (group === undefined) {
+    return <div className="min-h-[100dvh] bg-background" />;
+  }
 
   if (!group) {
     return (
@@ -51,39 +62,35 @@ const JoinGroup = () => {
     );
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error('Please enter your name'); return; }
     if (!phone.trim()) { toast.error('Please enter your phone number'); return; }
-    setStep('otp');
-    toast.success('OTP sent! (Demo: use 1234)');
+    setOtpBusy(true);
+    try {
+      const { devMode } = await requestOtp(phone, 'join');
+      setOtpDevMode(devMode);
+      setStep('otp');
+      toast.success('OTP sent to your phone');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send OTP');
+    } finally {
+      setOtpBusy(false);
+    }
   };
 
+  // The server verifies the code, creates or reuses the account, adds it to the group and logs in
   const handleOtpVerify = async () => {
-    if (otp !== OTP_CODE) { toast.error('Invalid OTP. Try 1234'); return; }
-
-    const username = name.trim().toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(2, 6);
-    const password = Math.random().toString(36).substring(2, 10);
-
-    const newUser = await createUser({
-      username,
-      password,
-      displayName: name.trim(),
-      phone: phone.trim(),
-      role: 'user',
-      adminId: group.adminId,
-      workspaceId: group.workspaceId,
-    });
-
-    addMember(group.id, newUser.id);
-    useAuthStore.getState().login(username, password);
-
-    setStep('done');
-    toast.success(`Welcome to ${group.name}!`);
-
-    setTimeout(() => {
-      router.push(`/workspace/${group.adminId}`);
-    }, 1500);
+    setOtpBusy(true);
+    try {
+      const user = await joinGroup({ groupSlug, name: name.trim(), phone, otp });
+      setStep('done');
+      toast.success(`Welcome to ${group.name}!`);
+      setTimeout(() => window.location.assign(`/workspace/${user.adminId}`), 1500);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not join the group');
+      setOtpBusy(false);
+    }
   };
 
   return (
@@ -97,7 +104,7 @@ const JoinGroup = () => {
           {group.description && (
             <p className="text-muted-foreground mt-1.5 text-sm">{group.description}</p>
           )}
-          <p className="text-xs text-muted-foreground mt-2">{group.memberIds.length} members</p>
+          <p className="text-xs text-muted-foreground mt-2">{group.memberCount} members</p>
         </div>
 
         <div className="bg-card rounded-2xl shadow-lg border border-border p-6 sm:p-8 space-y-4">
@@ -111,8 +118,8 @@ const JoinGroup = () => {
                 <Label>Phone Number *</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 234 567 8900" type="tel" required />
               </div>
-              <Button type="submit" className="w-full rounded-xl h-11 text-base font-medium gap-2">
-                <Send className="w-4 h-4" /> Join Group
+              <Button type="submit" disabled={otpBusy} className="w-full rounded-xl h-11 text-base font-medium gap-2">
+                <Send className="w-4 h-4" /> {otpBusy ? 'Sending code…' : 'Join Group'}
               </Button>
             </form>
           ) : (
@@ -125,19 +132,18 @@ const JoinGroup = () => {
                 <p className="text-xs text-muted-foreground">Code sent to {phone}</p>
               </div>
               <div className="flex justify-center">
-                <InputOTP maxLength={4} value={otp} onChange={setOtp}>
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                   <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
+                    {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} />)}
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button onClick={handleOtpVerify} disabled={otp.length < 4} className="w-full rounded-xl h-11 text-base font-medium">
-                Verify & Join
+              <Button onClick={handleOtpVerify} disabled={otp.length < 6 || otpBusy} className="w-full rounded-xl h-11 text-base font-medium">
+                {otpBusy ? 'Verifying…' : 'Verify & Join'}
               </Button>
-              <p className="text-xs text-center text-muted-foreground">Demo OTP: <span className="font-mono font-semibold text-foreground">1234</span></p>
+              {otpDevMode && (
+                <p className="text-xs text-center text-muted-foreground">Dev mode (no SMS configured): use <span className="font-mono font-semibold text-foreground">123456</span></p>
+              )}
             </div>
           )}
         </div>

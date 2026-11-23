@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { withDB } from '@/lib/mongodb';
+import { requireSession } from '@/lib/auth';
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FOLDERS = ['messages', 'avatars'];
@@ -13,6 +14,8 @@ cloudinary.config({
 
 export async function POST(req: NextRequest) {
   return withDB(async () => {
+    const auth = await requireSession(req);
+    if (auth instanceof NextResponse) return auth;
     const formData = await req.formData();
     const file = formData.get('file');
     const folderInput = formData.get('folder');

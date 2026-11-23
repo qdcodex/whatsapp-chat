@@ -9,8 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
+import { requestOtp } from '@/lib/otpClient';
 
-const OTP_CODE = '1234';
+const dashboardPath = (user: { role: string; workspaceId?: string; adminId?: string }) =>
+  user.role === 'superadmin' ? '/superadmin'
+    : user.role === 'admin' ? `/admin/${user.workspaceId}`
+    : `/workspace/${user.adminId}`;
 
 const Login = () => {
   const [mode, setMode] = useState<'credentials' | 'phone'>('credentials');
@@ -20,54 +24,57 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpDevMode, setOtpDevMode] = useState(false);
   const login = useAuthStore((s) => s.login);
   const loginByPhone = useAuthStore((s) => s.loginByPhone);
   const currentUser = useAuthStore((s) => s.currentUser);
-  const users = useAuthStore((s) => s.users);
-  const initialize = useAuthStore((s) => s.initialize);
   const router = useRouter();
 
+  // Already signed in (session restored by StoreInitializer): go to the dashboard
   useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === 'superadmin') router.replace('/superadmin');
-      else if (currentUser.role === 'admin') router.replace(`/admin/${currentUser.workspaceId}`);
-      else router.replace(`/workspace/${currentUser.adminId}`);
-    }
+    if (currentUser) router.replace(dashboardPath(currentUser));
   }, [currentUser, router]);
 
-  const handleCredentialsLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const user = login(username, password);
-    if (!user) { toast.error('Invalid credentials'); return; }
+  // Full page load so every store loads fresh data for this account
+  const enterApp = (user: { role: string; displayName: string; workspaceId?: string; adminId?: string }) => {
     toast.success(`Welcome back, ${user.displayName}!`);
-    redirectUser(user);
+    window.location.assign(dashboardPath(user));
   };
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handleCredentialsLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      enterApp(await login(username, password));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid credentials');
+    }
+  };
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim()) { toast.error('Please enter your phone number'); return; }
-    const exists = users.some((u) => u.phone && u.phone === phone.trim());
-    if (!exists) { toast.error('No account found with this phone number'); return; }
-    setOtpStep('otp');
-    toast.success('OTP sent! (Demo: use 1234)');
+    setOtpBusy(true);
+    try {
+      const { devMode } = await requestOtp(phone, 'login');
+      setOtpDevMode(devMode);
+      setOtpStep('otp');
+      toast.success('OTP sent to your phone');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send OTP');
+    } finally {
+      setOtpBusy(false);
+    }
   };
 
-  const handleOtpVerify = () => {
-    if (otp !== OTP_CODE) { toast.error('Invalid OTP. Try 1234'); return; }
-    const user = loginByPhone(phone.trim());
-    if (!user) { toast.error('Login failed'); return; }
-    toast.success(`Welcome back, ${user.displayName}!`);
-    redirectUser(user);
-  };
-
-  const redirectUser = (user: { role: string; workspaceId?: string; adminId?: string }) => {
-    if (user.role === 'superadmin') router.replace('/superadmin');
-    else if (user.role === 'admin') router.replace(`/admin/${user.workspaceId}`);
-    else router.replace(`/workspace/${user.adminId}`);
+  const handleOtpVerify = async () => {
+    setOtpBusy(true);
+    try {
+      enterApp(await loginByPhone(phone, otp));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid OTP');
+      setOtpBusy(false);
+    }
   };
 
   const resetPhoneFlow = () => {
@@ -153,7 +160,7 @@ const Login = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">Use the phone number you provided when joining a group.</p>
               </div>
-              <Button type="submit" className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">Send OTP</Button>
+              <Button type="submit" disabled={otpBusy} className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">{otpBusy ? 'Sending…' : 'Send OTP'}</Button>
             </form>
           ) : (
             <div className="space-y-4">
@@ -165,19 +172,18 @@ const Login = () => {
                 <p className="text-sm text-muted-foreground">Code sent to <span className="font-medium text-foreground">{phone}</span></p>
               </div>
               <div className="flex justify-center">
-                <InputOTP maxLength={4} value={otp} onChange={setOtp}>
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                   <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
+                    {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} />)}
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button onClick={handleOtpVerify} disabled={otp.length < 4} className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">
-                Verify & Sign In
+              <Button onClick={handleOtpVerify} disabled={otp.length < 6 || otpBusy} className="w-full rounded-lg h-12 text-base font-medium bg-primary hover:bg-primary/90">
+                {otpBusy ? 'Verifying…' : 'Verify & Sign In'}
               </Button>
-              <p className="text-xs text-center text-muted-foreground">Demo OTP: <span className="font-mono font-semibold text-foreground">1234</span></p>
+              {otpDevMode && (
+                <p className="text-xs text-center text-muted-foreground">Dev mode (no SMS configured): use <span className="font-mono font-semibold text-foreground">123456</span></p>
+              )}
             </div>
           )}
         </div>

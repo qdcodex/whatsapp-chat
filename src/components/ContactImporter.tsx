@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { UserPlus, Upload, X, Plus, FileSpreadsheet } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { UserPlus, Upload, X, Plus, FileSpreadsheet, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import PhoneContactsPanel, { type PhoneContactsOptions } from '@/components/PhoneContactsPanel';
+import { isNativeApp } from '@/lib/phoneContacts';
 
 export interface ContactEntry {
   name: string;
@@ -17,13 +19,19 @@ interface ContactImporterProps {
   onImport: (contacts: ContactEntry[]) => void;
   triggerLabel?: string;
   triggerVariant?: 'icon' | 'button';
+  // Enables the "Phone" tab (installed app only) for reading the device address book
+  phoneContacts?: PhoneContactsOptions;
 }
 
-const ContactImporter = ({ onImport, triggerLabel = 'Invite Contacts', triggerVariant = 'icon' }: ContactImporterProps) => {
+const ContactImporter = ({ onImport, triggerLabel = 'Invite Contacts', triggerVariant = 'icon', phoneContacts }: ContactImporterProps) => {
   const [open, setOpen] = useState(false);
   const [contacts, setContacts] = useState<ContactEntry[]>([{ name: '', phone: '' }]);
-  const [tab, setTab] = useState<'manual' | 'csv'>('manual');
+  const [tab, setTab] = useState<'manual' | 'csv' | 'phone'>('manual');
+  const [native, setNative] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setNative(isNativeApp()); }, []);
+  const showPhoneTab = native && !!phoneContacts;
 
   const addRow = () => setContacts([...contacts, { name: '', phone: '' }]);
 
@@ -108,6 +116,17 @@ const ContactImporter = ({ onImport, triggerLabel = 'Invite Contacts', triggerVa
 
         {/* Tab switcher */}
         <div className="flex bg-secondary rounded-lg p-1 gap-1">
+          {showPhoneTab && (
+            <button
+              onClick={() => setTab('phone')}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                tab === 'phone' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              Phone
+            </button>
+          )}
           <button
             onClick={() => setTab('manual')}
             className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
@@ -128,7 +147,9 @@ const ContactImporter = ({ onImport, triggerLabel = 'Invite Contacts', triggerVa
           </button>
         </div>
 
-        {tab === 'csv' ? (
+        {tab === 'phone' && phoneContacts ? (
+          <PhoneContactsPanel {...phoneContacts} />
+        ) : tab === 'csv' ? (
           <div className="space-y-3 py-2">
             <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
@@ -189,7 +210,7 @@ Jane Smith, +0987654321`}
           </div>
         )}
 
-        <div className="pt-2 border-t border-border">
+        <div className={`pt-2 border-t border-border ${tab === 'phone' ? 'hidden' : ''}`}>
           <Button onClick={handleSubmit} className="w-full gap-1.5">
             <UserPlus className="w-4 h-4" />
             Invite {contacts.filter(c => c.name.trim() && c.phone.trim()).length || ''} Contact{contacts.filter(c => c.name.trim() && c.phone.trim()).length !== 1 ? 's' : ''}
