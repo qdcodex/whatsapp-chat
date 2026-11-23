@@ -27,7 +27,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  viewportFit: "cover",
+  // "auto" keeps the page below the phone's status bar; with "cover" the Android
+  // app (edge-to-edge on Android 15+) drew the header under the clock/battery
+  viewportFit: "auto",
 };
 
 export default function RootLayout({

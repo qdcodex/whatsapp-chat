@@ -43,3 +43,7 @@ bun.lockb
 
 # TypeScript build cache
 tsconfig.tsbuildinfo
+
+# Built Android packages
+*.apk
+*.aab
