@@ -1,5 +1,6 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { SESSION_COOKIE, readCookie, verifySessionToken } from './session';
 
 let io: SocketIOServer | null = null;
 const userSockets = new Map<string, string[]>(); // userId -> socketIds[]
@@ -38,15 +39,21 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     pingTimeout: 60000,
   });
 
-  io.on('connection', (socket: Socket) => {
-    const userId = socket.handshake.query.userId as string;
-    const workspaceId = socket.handshake.query.workspaceId as string;
+  // Identity comes from the signed session cookie, never from client-sent values
+  io.use(async (socket, next) => {
+    const token = readCookie(socket.handshake.headers.cookie, SESSION_COOKIE);
+    const session = await verifySessionToken(token);
+    if (!session || !session.workspaceId) return next(new Error('Not logged in'));
+    socket.data.userId = session.userId;
+    socket.data.workspaceId = session.workspaceId;
+    socket.data.role = session.role;
+    next();
+  });
 
-    if (!userId || !workspaceId) {
-      console.log('Missing userId or workspaceId');
-      socket.disconnect();
-      return;
-    }
+  io.on('connection', (socket: Socket) => {
+    const userId = socket.data.userId as string;
+    const workspaceId = socket.data.workspaceId as string;
+    const role = socket.data.role as string;
 
     // Track this socket for the user
     if (!userSockets.has(userId)) {
@@ -74,9 +81,10 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       socketId: socket.id,
     });
 
-    // Message events
+    // Message events — the relayed message always carries the real sender
     socket.on('message:send', (data) => {
-      io?.to(`workspace:${workspaceId}`).emit('message:new', data);
+      if (!data || typeof data !== 'object') return;
+      io?.to(`workspace:${workspaceId}`).emit('message:new', { ...data, senderId: userId, workspaceId });
     });
 
     socket.on('message:status-update', (data) => {
@@ -89,8 +97,9 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
 
     // Profile updates — broadcast to everyone in the workspace
     socket.on('user:profile-updated', (data: { userId: string; displayName?: string; avatar?: string }) => {
+      // Users can only announce changes to their own profile
       io?.to(`workspace:${workspaceId}`).emit('user:profile-updated', {
-        userId: data.userId,
+        userId,
         displayName: data.displayName,
         avatar: data.avatar,
       });
@@ -98,6 +107,7 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
 
     // Settings changes (e.g. chatEnabled toggled by admin) — sent only to the target user
     socket.on('user:settings-updated', (data: { userId: string; chatEnabled?: boolean }) => {
+      if (role !== 'admin' || typeof data?.userId !== 'string') return;
       io?.to(`user:${data.userId}`).emit('user:settings-updated', {
         userId: data.userId,
         chatEnabled: data.chatEnabled,

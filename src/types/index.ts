@@ -5,7 +5,7 @@ export type MessageStatus = 'sent' | 'delivered' | 'read';
 export interface User {
   id: string;
   username: string;
-  password: string;
+  password?: string; // only sent when creating/updating; never returned by the API
   role: UserRole;
   displayName: string;
   avatar?: string;

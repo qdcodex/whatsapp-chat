@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import UnreadBadge from '@/components/UnreadBadge';
+import { normalizePhone } from '@/lib/phone';
 import ContactImporter, { type ContactEntry } from '@/components/ContactImporter';
 import type { User, Group } from '@/types';
 
@@ -93,7 +94,7 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
 
     let added = 0;
     for (const c of contacts.slice(0, remaining)) {
-      const existing = users.find(u => u.phone === c.phone.trim());
+      const existing = users.find(u => u.phone && normalizePhone(u.phone) === normalizePhone(c.phone));
       if (existing) {
         const result = addMember(groupId, existing.id);
         if (result.success) added++;
@@ -220,6 +221,13 @@ const GroupManager = ({ workspaceId, adminId, adminName, users, onGroupSelect, a
                   <ContactImporter
                     triggerLabel="Invite"
                     onImport={(contacts) => handleInviteContacts(group.id, contacts)}
+                    phoneContacts={{
+                      workspaceId,
+                      groupName: group.name,
+                      joinLink: `${window.location.origin}/join/${group.slug}`,
+                      memberIds: group.memberIds,
+                      onAddUser: (userId) => handleAddMember(group.id, userId),
+                    }}
                   />
                   <Button
                     variant="ghost"

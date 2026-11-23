@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@/types';
 import { socketClient } from '@/lib/socketClient';
+import { normalizePhone } from '@/lib/phone';
 
 interface AuthState {
   currentUser: User | null;
@@ -9,9 +10,11 @@ interface AuthState {
   isInitialized: boolean;
 
   initialize: () => Promise<void>;
-  login: (username: string, password: string) => User | null;
-  loginByPhone: (phone: string) => User | null;
-  logout: () => void;
+  restoreSession: () => Promise<User | null>;
+  login: (username: string, password: string) => Promise<User>;
+  loginByPhone: (phone: string, otp: string) => Promise<User>;
+  joinGroup: (data: { groupSlug: string; name: string; phone: string; otp: string }) => Promise<User>;
+  logout: () => Promise<void>;
   createUser: (data: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   deleteUser: (id: string) => Promise<void>;
   toggleUserChat: (userId: string, newValue: boolean) => Promise<void>;
@@ -28,6 +31,17 @@ interface AuthState {
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
+async function postAuth(url: string, body: unknown) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -35,48 +49,68 @@ export const useAuthStore = create<AuthState>()(
   users: [],
   isInitialized: false,
 
+  // Loads the users visible to the logged-in account (server scopes the list)
   initialize: async () => {
     if (get().isInitialized) return;
     const res = await fetch('/api/users');
     if (!res.ok) return;
     const users: User[] = await res.json();
-    // Sync currentUser from fresh server data so persisted values (chatEnabled, etc.)
-    // are always up-to-date when the app loads
     const currentUser = get().currentUser;
     const freshCurrentUser = currentUser ? users.find(u => u.id === currentUser.id) ?? currentUser : null;
     set({ users, isInitialized: true, currentUser: freshCurrentUser });
   },
 
-  login: (username, password) => {
-    const user = get().users.find(u => u.username === username && u.password === password);
-    if (user) { set({ currentUser: user }); return user; }
-    return null;
+  // The server cookie is the source of truth; the persisted currentUser is only a hint
+  restoreSession: async () => {
+    const res = await fetch('/api/auth/me');
+    const user: User | null = res.ok ? await res.json() : null;
+    set({ currentUser: user });
+    return user;
   },
 
-  loginByPhone: (phone) => {
-    const user = get().users.find(u => u.phone && u.phone === phone);
-    if (user) { set({ currentUser: user }); return user; }
-    return null;
+  login: async (username, password) => {
+    const user = await postAuth('/api/auth/login', { username, password });
+    set({ currentUser: user, isInitialized: false });
+    return user;
   },
 
-  logout: () => set({ currentUser: null }),
+  loginByPhone: async (phone, otp) => {
+    const user = await postAuth('/api/auth/otp-login', { phone, otp });
+    set({ currentUser: user, isInitialized: false });
+    return user;
+  },
+
+  joinGroup: async (data) => {
+    const { user } = await postAuth('/api/auth/join', data);
+    set({ currentUser: user, isInitialized: false });
+    return user;
+  },
+
+  // Full reload afterwards so no other account's data stays in memory
+  logout: async () => {
+    set({ currentUser: null, users: [], isInitialized: false });
+    socketClient.disconnect();
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    if (typeof window !== 'undefined') window.location.assign('/login');
+  },
 
   createUser: async (data) => {
     // Guard duplicate phone on the client side before sending to server
     if (data.phone) {
-      const duplicate = get().users.find(u => u.phone && u.phone === data.phone);
+      const duplicate = get().users.find(u => u.phone && normalizePhone(u.phone) === normalizePhone(data.phone!));
       if (duplicate) throw new Error('A user with this phone number already exists');
     }
-    const newUser: User = { ...data, id: generateId(), createdAt: Date.now() };
+    // The server sets role/workspace/password rules; only superadmin-chosen admin passwords are kept
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newUser),
+      body: JSON.stringify({ ...data, id: generateId() }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed to create user');
     }
+    const newUser: User = await res.json();
     set(s => ({ users: [...s.users, newUser] }));
     return newUser;
   },
@@ -131,9 +165,11 @@ export const useAuthStore = create<AuthState>()(
   updateUser: async (userId, data) => {
     // Only send non-empty values
     const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined && v !== ''));
+    // Passwords go to the server only; never keep them in client state
+    const { password: _pw, ...localPatch } = patch;
     set(s => ({
-      users: s.users.map(u => u.id === userId ? { ...u, ...patch } : u),
-      currentUser: s.currentUser?.id === userId ? { ...s.currentUser, ...patch } : s.currentUser,
+      users: s.users.map(u => u.id === userId ? { ...u, ...localPatch } : u),
+      currentUser: s.currentUser?.id === userId ? { ...s.currentUser, ...localPatch } : s.currentUser,
     }));
     await fetch(`/api/users/${userId}`, {
       method: 'PATCH',

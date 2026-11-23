@@ -23,7 +23,7 @@ interface IUser extends Document {
 const UserSchema = new Schema<IUser>({
   id:              { type: String, required: true, unique: true, index: true },
   username:        { type: String, required: true, unique: true },
-  password:        { type: String, required: true },
+  password:        { type: String, required: true, select: false }, // scrypt hash; never sent to clients
   role:            { type: String, enum: ['superadmin', 'admin', 'user'], required: true },
   displayName:     { type: String, required: true },
   avatar:          String,

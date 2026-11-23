@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, withDB } from '@/lib/mongodb';
 import { AdminSubscriptionModel } from '@/lib/models/AdminSubscription';
 import { PaymentNotificationModel } from '@/lib/models/PaymentNotification';
+import { forbidden, requireSession } from '@/lib/auth';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_BILLING_DAYS = 28;
@@ -9,8 +10,14 @@ const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export async function POST(req: NextRequest) {
   return withDB(async () => {
+    const auth = await requireSession(req, ['admin', 'superadmin']);
+    if (auth instanceof NextResponse) return auth;
     await connectDB();
-    const { adminId, adminName, workspaceId, note } = await req.json();
+    const body = await req.json();
+    const { adminId, adminName, note } = body;
+    // An admin can only record a payment for their own subscription
+    if (auth.role === 'admin' && adminId !== auth.userId) return forbidden();
+    const workspaceId = auth.role === 'admin' ? auth.workspaceId : body.workspaceId;
 
     const now = Date.now();
     const existing = await AdminSubscriptionModel.findOne({ adminId });
