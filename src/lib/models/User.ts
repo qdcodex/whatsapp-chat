@@ -18,6 +18,7 @@ interface IUser extends Document {
   adminId?: string;
   createdAt: number;
   chatEnabled?: boolean;
+  lastSeenAt?: number;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -32,6 +33,7 @@ const UserSchema = new Schema<IUser>({
   adminId:         String,
   createdAt:       { type: Number, required: true },
   chatEnabled:     Boolean,
+  lastSeenAt:      Number, // last check-in from an open app; drives the online dot
 }, { toJSON: { transform }, toObject: { transform } });
 
 export const UserModel = (models.User || model<IUser>('User', UserSchema)) as Model<IUser>;
