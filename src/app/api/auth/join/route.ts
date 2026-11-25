@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
     const withPhone = await UserModel.find({ phone: { $exists: true, $ne: '' } }).lean().exec();
     const existing = withPhone.find((u) => u.phone && normalizePhone(u.phone) === wanted);
 
+    // An admin's number can't be used to join (that would log them in by OTP)
+    if (existing && existing.role !== 'user') {
+      return NextResponse.json(
+        { error: 'This number belongs to an admin account. Admins sign in with username and password.' },
+        { status: 409 }
+      );
+    }
     if (existing && existing.workspaceId !== group.workspaceId) {
       return NextResponse.json(
         { error: 'This phone number is already registered with another workspace' },
