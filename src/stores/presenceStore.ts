@@ -121,7 +121,7 @@ export const usePresenceStore = create<PresenceState>()((set, get) => ({
     }, 15000);
 
     // Listen for remote presence updates from other tabs
-    broadcastChannelSync.onPresenceSync((event) => {
+    const stopTabSync = broadcastChannelSync.onPresenceSync((event) => {
       if (event.action === 'add' || event.action === 'update') {
         if (event.data.type === 'online') {
           get().handleRemoteUserOnline(event.data);
@@ -133,7 +133,10 @@ export const usePresenceStore = create<PresenceState>()((set, get) => ({
       }
     });
 
-    return () => clearInterval(heartbeatInterval);
+    return () => {
+      clearInterval(heartbeatInterval);
+      stopTabSync();
+    };
   },
 
   handleRemoteUserOnline: (data) => {

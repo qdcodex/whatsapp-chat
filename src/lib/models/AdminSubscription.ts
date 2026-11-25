@@ -23,6 +23,7 @@ interface IAdminSubscription extends Document {
   nextDueAt?: number;
   history: IPaymentRecord[];
   paymentActive?: boolean;
+  pendingClaim?: { id: string; claimedAt: number; amount: number; note?: string };
 }
 
 const PaymentRecordSchema = new Schema<IPaymentRecord>({
@@ -42,6 +43,8 @@ const AdminSubscriptionSchema = new Schema<IAdminSubscription>({
   nextDueAt:        Number,
   history:          [PaymentRecordSchema],
   paymentActive:    { type: Boolean, default: true },
+  // Admin says they paid; the superadmin confirms or rejects before the due date moves
+  pendingClaim:     { id: String, claimedAt: Number, amount: Number, note: String },
 }, { toJSON: { transform }, toObject: { transform } });
 
 export const AdminSubscriptionModel = (models.AdminSubscription || model<IAdminSubscription>('AdminSubscription', AdminSubscriptionSchema)) as Model<IAdminSubscription>;

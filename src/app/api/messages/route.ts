@@ -5,6 +5,9 @@ import { GroupModel } from '@/lib/models/Group';
 import { UserModel } from '@/lib/models/User';
 import { forbidden, newId, pick, requireSession } from '@/lib/auth';
 import { notifyNewMessage } from '@/lib/push';
+import { WorkspaceModel } from '@/lib/models/Workspace';
+import { AdminSubscriptionModel } from '@/lib/models/AdminSubscription';
+import { isMessagingPaused } from '@/lib/subscription';
 
 const NONE = { $in: [null, ''] };
 const PUSH_TIMEOUT_MS = 4000;
@@ -55,6 +58,17 @@ export async function POST(req: NextRequest) {
     // Sender, workspace and admin always come from the session, never the body
     const me = await UserModel.findOne({ id: auth.userId }, { adminId: 1 }).lean().exec();
     const adminId = auth.role === 'admin' ? auth.userId : me?.adminId;
+
+    // Admins can't send when the superadmin switched messaging off, or when their
+    // subscription is overdue past the grace period
+    if (auth.role === 'admin') {
+      const [ws, sub] = await Promise.all([
+        WorkspaceModel.findOne({ slug: auth.workspaceId }, { messagingEnabled: 1 }).lean().exec(),
+        AdminSubscriptionModel.findOne({ adminId: auth.userId }).lean().exec(),
+      ]);
+      if (ws?.messagingEnabled === false) return forbidden('Messaging has been disabled by super admin');
+      if (isMessagingPaused(sub)) return forbidden('Subscription overdue: messaging is paused until payment is confirmed');
+    }
 
     if (typeof data.groupId === 'string' && data.groupId) {
       const group = await GroupModel.findOne({ id: data.groupId }, { workspaceId: 1, adminId: 1, memberIds: 1 }).lean().exec();

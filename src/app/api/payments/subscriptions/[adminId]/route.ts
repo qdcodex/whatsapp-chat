@@ -22,7 +22,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ad
     if (auth instanceof NextResponse) return auth;
     const { adminId } = await params;
     await connectDB();
-    const update = pick(await req.json(), ['monthlyAmount', 'billingCycleDays', 'paymentActive', 'adminName', 'workspaceId']);
+    const update: Record<string, unknown> = pick(await req.json(), ['monthlyAmount', 'billingCycleDays', 'paymentActive', 'adminName', 'workspaceId']);
+
+    // Billing starts as soon as a fee applies: the first payment is due right away
+    // (paid in advance), with the usual grace period before messaging pauses.
+    const existing = await AdminSubscriptionModel.findOne({ adminId }).lean().exec();
+    const fee = (update.monthlyAmount as number | undefined) ?? existing?.monthlyAmount ?? 0;
+    const active = (update.paymentActive as boolean | undefined) ?? existing?.paymentActive ?? true;
+    if (fee > 0 && active && !existing?.nextDueAt) update.nextDueAt = Date.now();
+
     const sub = await AdminSubscriptionModel.findOneAndUpdate(
       { adminId },
       { $set: update },
