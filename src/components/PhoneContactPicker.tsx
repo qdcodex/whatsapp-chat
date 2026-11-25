@@ -59,7 +59,7 @@ const PhoneContactPicker = ({ onAdd }: PhoneContactPickerProps) => {
     return (
       <div className="py-4 text-center space-y-3">
         <Smartphone className="w-9 h-9 mx-auto text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">Pick people from your phone's contacts to add them as users.</p>
+        <p className="text-xs text-muted-foreground">Pick people from your phone&apos;s contacts to add them as users.</p>
         <Button onClick={loadContacts} disabled={loading} className="gap-1.5">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
           {loading ? 'Reading contacts…' : 'Load phone contacts'}
