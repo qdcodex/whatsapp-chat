@@ -24,6 +24,8 @@ public/workbox-*.js
 public/workbox-*.js.map
 public/swe-worker-*.js
 public/swe-worker-*.js.map
+public/worker-*.js
+public/worker-*.js.map
 public/fallback-*.js
 
 # Bun lock files — project uses npm for CI/Railway
@@ -47,3 +49,7 @@ tsconfig.tsbuildinfo
 # Built Android packages
 *.apk
 *.aab
+
+# Firebase service-account keys (secret) - never commit
+*firebase-adminsdk*.json
+serviceAccountKey*.json

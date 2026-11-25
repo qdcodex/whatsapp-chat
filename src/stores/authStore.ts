@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { User } from '@/types';
 import { socketClient } from '@/lib/socketClient';
 import { normalizePhone } from '@/lib/phone';
+import { unregisterPush } from '@/lib/pushClient';
 
 interface AuthState {
   currentUser: User | null;
@@ -88,6 +89,7 @@ export const useAuthStore = create<AuthState>()(
 
   // Full reload afterwards so no other account's data stays in memory
   logout: async () => {
+    await unregisterPush(); // needs the session cookie, so before logging out
     set({ currentUser: null, users: [], isInitialized: false });
     socketClient.disconnect();
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});

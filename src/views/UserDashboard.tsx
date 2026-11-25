@@ -66,12 +66,6 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
     if (!currentUser || !_slug) return;
 
     const messageCleanup = useMessageStore.getState().initializeRealTime(currentUser.id, _slug);
