@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "749971037351",
+    "project_id": "me2-app-6a2a5",
+    "storage_bucket": "me2-app-6a2a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749971037351:android:fe138268f3440da08a8f82",
+        "android_client_info": {
+          "package_name": "com.me2.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdITPkXS5PY77RwF7Ja88aTwlh7tKi76Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

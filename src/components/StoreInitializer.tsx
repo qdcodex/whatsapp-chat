@@ -7,6 +7,7 @@ import { useMessageStore } from '@/stores/messageStore';
 import { useGroupStore } from '@/stores/groupStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { registerPush } from '@/lib/pushClient';
 
 // Checks the server session first; app data is only loaded for a logged-in user.
 // Login/logout do a full page load, so this runs fresh for each account.
@@ -19,6 +20,7 @@ export function StoreInitializer() {
     (async () => {
       const user = await useAuthStore.getState().restoreSession();
       if (!user) return;
+      if (user.role !== 'superadmin') registerPush();
       await Promise.allSettled([
         useAuthStore.getState().initialize(),
         useWorkspaceStore.getState().initialize(),

@@ -115,12 +115,6 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
     if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
       router.replace('/');
     }

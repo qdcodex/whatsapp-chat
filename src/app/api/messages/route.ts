@@ -4,8 +4,10 @@ import { MessageModel } from '@/lib/models/Message';
 import { GroupModel } from '@/lib/models/Group';
 import { UserModel } from '@/lib/models/User';
 import { forbidden, newId, pick, requireSession } from '@/lib/auth';
+import { notifyNewMessage } from '@/lib/push';
 
 const NONE = { $in: [null, ''] };
+const PUSH_TIMEOUT_MS = 4000;
 
 // Superadmin: everything (optionally filtered). Admin: their workspace's
 // broadcast and group messages plus their own DMs. User: broadcasts, their own
@@ -75,6 +77,15 @@ export async function POST(req: NextRequest) {
       timestamp: Date.now(),
       status: 'sent',
     });
-    return NextResponse.json(message.toJSON(), { status: 201 });
+
+    // Awaited (serverless hosts stop work after the response), but capped so a
+    // slow push service never delays the chat by more than a few seconds
+    const saved = message.toJSON();
+    await Promise.race([
+      notifyNewMessage(saved).catch((err) => console.warn('[push] notify failed:', err?.message ?? err)),
+      new Promise((resolve) => setTimeout(resolve, PUSH_TIMEOUT_MS)),
+    ]);
+
+    return NextResponse.json(saved, { status: 201 });
   });
 }
