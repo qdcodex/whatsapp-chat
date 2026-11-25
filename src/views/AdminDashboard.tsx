@@ -25,8 +25,10 @@ import {
   LogOut, Users, Trash2, ArrowLeft,
   Settings, MessageCircle, ToggleLeft, ToggleRight,
   Search, UserPlus, Clock, CreditCard, CheckCircle, AlertCircle, AlertTriangle,
-  Megaphone, ExternalLink, Upload, ImageIcon, X,
+  Megaphone, ExternalLink, Upload, ImageIcon, X, Smartphone,
 } from 'lucide-react';
+import PhoneContactPicker from '@/components/PhoneContactPicker';
+import { isNativeApp } from '@/lib/phoneContacts';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import { Input } from '@/components/ui/input';
@@ -71,6 +73,9 @@ const AdminDashboard = () => {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
+  const [pickFromContacts, setPickFromContacts] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
+  useEffect(() => { setNativeApp(isNativeApp()); }, []);
   const [autoDeleteDaysInput, setAutoDeleteDaysInput] = useState('7');
   const [adImageInput, setAdImageInput] = useState('');
   const [adTitleInput, setAdTitleInput] = useState('');
@@ -104,6 +109,18 @@ const AdminDashboard = () => {
     } catch (err: any) {
       toast.error(err?.message || 'Failed to create user');
     }
+  };
+
+  // "Add" on a phone contact: same as the form, but the window stays open for more
+  const addContactAsUser = async (contact: { name: string; phone: string }) => {
+    await createUser({
+      username: contact.phone,
+      role: 'user',
+      displayName: contact.name,
+      phone: contact.phone,
+      workspaceId: workspaceId!,
+      adminId: currentUser!.id,
+    });
   };
 
   const handleUpdateDisplayName = async () => {
@@ -306,25 +323,39 @@ const AdminDashboard = () => {
             <h1 className="font-semibold text-[15px] text-wa-header-fg truncate">{workspace?.name || workspaceId}</h1>
           </div>
           <div className="flex items-center gap-0.5">
-            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+            <Dialog open={createUserOpen} onOpenChange={(open) => { setCreateUserOpen(open); if (!open) setPickFromContacts(false); }}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-header-fg/80 hover:bg-wa-teal-dark hover:text-wa-header-fg">
                   <UserPlus className="w-5 h-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md">
-                <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="newUserName">Display Name</Label>
-                    <Input id="newUserName" placeholder="e.g. John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                <DialogHeader><DialogTitle>{pickFromContacts ? 'Add from Phone Contacts' : 'Add New User'}</DialogTitle></DialogHeader>
+                {pickFromContacts ? (
+                  <div className="space-y-3">
+                    <PhoneContactPicker onAdd={addContactAsUser} />
+                    <Button variant="outline" className="w-full" onClick={() => setPickFromContacts(false)}>
+                      Enter name and number instead
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newUserPhone">Phone Number</Label>
-                    <Input id="newUserPhone" placeholder="e.g. +91 98765 43210" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
+                ) : (
+                  <div className="space-y-4">
+                    {nativeApp && (
+                      <Button variant="outline" className="w-full gap-2" onClick={() => setPickFromContacts(true)}>
+                        <Smartphone className="w-4 h-4" /> Choose from phone contacts
+                      </Button>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="newUserName">Display Name</Label>
+                      <Input id="newUserName" placeholder="e.g. John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newUserPhone">Phone Number</Label>
+                      <Input id="newUserPhone" placeholder="e.g. +91 98765 43210" value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} />
+                    </div>
+                    <Button className="w-full" onClick={handleCreateUser}>Add User</Button>
                   </div>
-                  <Button className="w-full" onClick={handleCreateUser}>Add User</Button>
-                </div>
+                )}
               </DialogContent>
             </Dialog>
             <Dialog open={settingsOpen} onOpenChange={handleSettingsOpen}>
