@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from './useSocket';
+import { usePresenceStore } from '@/stores/presenceStore';
+
+const ONLINE_WINDOW_MS = 45_000; // matches presenceStore.isOnline
 
 interface OnlineUser {
   userId: string;
@@ -136,9 +139,21 @@ export function useOnlineStatus({
   }, [enabled, userId, workspaceId, on, emit]);
 
   /** Is a given user currently online? */
+  // Online if the real-time server says so, or if they checked in recently (the
+  // check-ins are what works on hosts without the real-time server, e.g. Vercel)
+  const checkIns = usePresenceStore((s) => s.onlineUsers);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 15000); // let stale dots turn grey
+    return () => clearInterval(t);
+  }, []);
   const isUserOnline = useCallback(
-    (checkUserId: string) => onlineUsers.has(checkUserId),
-    [onlineUsers]
+    (checkUserId: string) => {
+      if (onlineUsers.has(checkUserId)) return true;
+      const ts = checkIns[checkUserId];
+      return !!ts && now - ts < ONLINE_WINDOW_MS;
+    },
+    [onlineUsers, checkIns, now]
   );
 
   /** Is a given user typing in a DM to the current user? */

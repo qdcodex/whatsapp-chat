@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { broadcastChannelSync } from '@/lib/broadcastChannelSync';
 
+// How often an open app checks in; isOnline() treats 45s without a check-in as offline
+const PRESENCE_SYNC_MS = 20_000;
+
 interface PresenceState {
   onlineUsers: Record<string, number>; // userId -> lastHeartbeat timestamp
   typingUsers: Record<string, number>; // `${userId}-${workspaceId}` -> timestamp
@@ -133,8 +136,36 @@ export const usePresenceStore = create<PresenceState>()((set, get) => ({
       }
     });
 
+    // Server check-in (works without the real-time server, e.g. on Vercel): while
+    // the app is visible, say "I'm online" and fetch who else checked in recently.
+    // A backgrounded app stops checking in, so it shows offline within ~45s.
+    const syncWithServer = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        await fetch('/api/presence', { method: 'POST' });
+        const res = await fetch('/api/presence');
+        if (!res.ok) return;
+        const { serverNow, lastSeen } = (await res.json()) as { serverNow: number; lastSeen: Record<string, number> };
+        const skew = Date.now() - serverNow; // convert server times to this device's clock
+        set((s) => {
+          const onlineUsers = { ...s.onlineUsers };
+          for (const [id, ts] of Object.entries(lastSeen)) {
+            const local = ts + skew;
+            if (!onlineUsers[id] || onlineUsers[id] < local) onlineUsers[id] = local;
+          }
+          return { onlineUsers };
+        });
+      } catch { /* offline: try again next round */ }
+    };
+    syncWithServer();
+    const serverSyncInterval = setInterval(syncWithServer, PRESENCE_SYNC_MS);
+    const onVisible = () => { if (document.visibilityState === 'visible') syncWithServer(); };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       clearInterval(heartbeatInterval);
+      clearInterval(serverSyncInterval);
+      document.removeEventListener('visibilitychange', onVisible);
       stopTabSync();
     };
   },
