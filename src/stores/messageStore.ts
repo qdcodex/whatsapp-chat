@@ -205,7 +205,7 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
   initializeRealTime: (userId, workspaceId) => {
     broadcastChannelSync.initialize();
 
-    broadcastChannelSync.onMessageSync((event) => {
+    const stopTabSync = broadcastChannelSync.onMessageSync((event) => {
       if (event.action === 'add') {
         get().handleRemoteMessage(event.data);
       } else if (event.action === 'update') {
@@ -252,6 +252,7 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
     }, 30000);
 
     return () => {
+      stopTabSync();
       clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       socketClient.off('message:deleted', handleDeletedEvent);
@@ -267,7 +268,6 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
       if (exists) return s;
       return { messages: [...s.messages, message] };
     });
-    broadcastChannelSync.broadcastMessage('add', message);
   },
 
   handleRemoteStatusUpdate: (update) => {
@@ -276,7 +276,6 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
         m.id === update.messageId ? { ...m, status: update.status } : m
       ),
     }));
-    broadcastChannelSync.broadcastMessage('update', update);
   },
 
   handleRemoteDelete: (data) => {
@@ -288,6 +287,5 @@ export const useMessageStore = create<MessageState>()((set, get) => ({
         return m;
       }),
     }));
-    broadcastChannelSync.broadcastMessage('delete', data);
   },
 }));

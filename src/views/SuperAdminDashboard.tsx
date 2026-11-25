@@ -7,11 +7,12 @@ import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { useGroupStore } from '@/stores/groupStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { formatFee, GRACE_DAYS } from '@/lib/subscription';
 import { format } from 'date-fns';
 import {
   LogOut, Plus, Trash2, Users, MessageSquare, Shield, Phone, Search,
   Bell, BellOff, CheckCircle, XCircle, CreditCard, Check,
-  AlertCircle, AlertTriangle, Clock, ChevronDown, ChevronUp, DollarSign,
+  AlertCircle, AlertTriangle, Clock, ChevronDown, ChevronUp, IndianRupee,
   ToggleLeft, ToggleRight, MessageCircle, Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { toast } from 'sonner';
 
 const SuperAdminDashboard = () => {
   const router = useRouter();
+  const sessionChecked = useAuthStore((s) => s.sessionChecked);
   const { currentUser, logout, getAdmins, createUser, deleteUser, updateUser, getUsersByAdmin, users: allUsers } = useAuthStore();
   const { workspaces, createWorkspace, deleteWorkspace, toggleGlobalChat, toggleMessaging, getWorkspaceByAdmin } = useWorkspaceStore();
   const { messages } = useMessageStore();
@@ -42,6 +44,8 @@ const SuperAdminDashboard = () => {
     setBillingCycleDays,
     togglePaymentActive,
     recordPayment,
+    rejectClaim,
+    isMessagingPaused,
     getPaymentStatus,
     getDaysRemaining,
     getDaysOverdue,
@@ -61,10 +65,11 @@ const SuperAdminDashboard = () => {
   const [recordingPayment, setRecordingPayment] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!sessionChecked) return;
     if (!currentUser || currentUser.role !== 'superadmin') {
       router.replace('/');
     }
-  }, [currentUser, router]);
+  }, [sessionChecked, currentUser, router]);
 
   if (!currentUser || currentUser.role !== 'superadmin') {
     return null;
@@ -571,7 +576,7 @@ const SuperAdminDashboard = () => {
                           <div className="bg-secondary/60 rounded-lg p-2 text-center">
                             <p className="text-[10px] text-muted-foreground">Fee</p>
                             <p className="text-sm font-bold text-foreground mt-0.5">
-                              {sub?.monthlyAmount ? `$${sub.monthlyAmount}` : '—'}
+                              {sub?.monthlyAmount ? formatFee(sub.monthlyAmount) : '—'}
                             </p>
                           </div>
                           <div className="bg-secondary/60 rounded-lg p-2 text-center">
@@ -608,10 +613,62 @@ const SuperAdminDashboard = () => {
                           </p>
                         )}
 
+                        {/* Admin says they paid: confirm (records the payment) or reject */}
+                        {sub?.pendingClaim && (
+                          <div className="mb-3 p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 space-y-2">
+                            <p className="text-xs text-foreground">
+                              <span className="font-semibold">{admin.displayName}</span> says they paid{' '}
+                              <span className="font-semibold">{formatFee(sub.pendingClaim.amount)}</span> on{' '}
+                              {format(new Date(sub.pendingClaim.claimedAt), 'MMM d, h:mm a')}
+                              {sub.pendingClaim.note ? ` (${sub.pendingClaim.note})` : ''}.
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                disabled={recordingPayment === admin.id}
+                                onClick={async () => {
+                                  setRecordingPayment(admin.id);
+                                  try {
+                                    await recordPayment(admin.id);
+                                    toast.success(`Payment confirmed for ${admin.displayName}`);
+                                  } catch (err: unknown) {
+                                    toast.error((err as Error)?.message || 'Failed to confirm payment');
+                                  } finally {
+                                    setRecordingPayment(null);
+                                  }
+                                }}
+                              >
+                                <Check className="w-3 h-3 mr-1" /> Confirm payment
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs flex-1"
+                                onClick={async () => {
+                                  try {
+                                    await rejectClaim(admin.id);
+                                    toast.success('Payment claim rejected');
+                                  } catch (err: unknown) {
+                                    toast.error((err as Error)?.message || 'Failed to reject claim');
+                                  }
+                                }}
+                              >
+                                Not received
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        {isMessagingPaused(admin.id) && (
+                          <p className="text-[11px] text-red-600 font-medium mb-3">
+                            Messaging paused: more than {GRACE_DAYS} days overdue.
+                          </p>
+                        )}
+
                         {/* Set amount + billing days */}
                         <div className="flex items-center gap-2 mb-2">
                           <div className="relative flex-1">
-                            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                            <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                             <Input
                               type="number"
                               min="0"
@@ -625,12 +682,12 @@ const SuperAdminDashboard = () => {
                             size="sm"
                             variant="outline"
                             className="h-8 text-xs shrink-0"
-                            onClick={() => {
+                            onClick={async () => {
                               const amt = parseFloat(amountInputs[admin.id] ?? '');
                               if (isNaN(amt) || amt < 0) return;
-                              ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
-                              setMonthlyAmount(admin.id, amt);
-                              toast.success(`Fee set to $${amt} for ${admin.displayName}`);
+                              await ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
+                              await setMonthlyAmount(admin.id, amt);
+                              toast.success(`Fee set to ${formatFee(amt)} for ${admin.displayName}`);
                             }}
                           >
                             Set Fee
@@ -653,11 +710,11 @@ const SuperAdminDashboard = () => {
                             size="sm"
                             variant="outline"
                             className="h-8 text-xs shrink-0"
-                            onClick={() => {
+                            onClick={async () => {
                               const days = parseInt(cycleInputs[admin.id] ?? '');
                               if (isNaN(days) || days < 1) return;
-                              ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
-                              setBillingCycleDays(admin.id, days);
+                              await ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
+                              await setBillingCycleDays(admin.id, days);
                               toast.success(`Billing cycle set to ${days} days for ${admin.displayName}`);
                             }}
                           >
@@ -682,12 +739,7 @@ const SuperAdminDashboard = () => {
                               setRecordingPayment(admin.id);
                               try {
                                 await ensureSubscription(admin.id, admin.displayName, admin.workspaceId!);
-                                await recordPayment(
-                                  admin.id,
-                                  admin.displayName,
-                                  admin.workspaceId!,
-                                  noteInputs[admin.id]?.trim() || undefined,
-                                );
+                                await recordPayment(admin.id, noteInputs[admin.id]?.trim() || undefined);
                                 setNoteInputs(prev => ({ ...prev, [admin.id]: '' }));
                                 toast.success(`Payment recorded for ${admin.displayName}`);
                               } catch (err: unknown) {
@@ -724,7 +776,7 @@ const SuperAdminDashboard = () => {
                                   {record.note && <span className="italic">· {record.note}</span>}
                                 </div>
                                 <span className="font-medium text-foreground">
-                                  {record.amount ? `$${record.amount}` : '—'}
+                                  {record.amount ? formatFee(record.amount) : '—'}
                                 </span>
                               </div>
                             ))}

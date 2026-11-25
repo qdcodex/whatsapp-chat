@@ -9,6 +9,7 @@ interface AuthState {
   currentUser: User | null;
   users: User[];
   isInitialized: boolean;
+  sessionChecked: boolean; // true once /api/auth/me has answered on this page load
 
   initialize: () => Promise<void>;
   restoreSession: () => Promise<User | null>;
@@ -49,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
   currentUser: null,
   users: [],
   isInitialized: false,
+  sessionChecked: false,
 
   // Loads the users visible to the logged-in account (server scopes the list)
   initialize: async () => {
@@ -65,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
   restoreSession: async () => {
     const res = await fetch('/api/auth/me');
     const user: User | null = res.ok ? await res.json() : null;
-    set({ currentUser: user });
+    set({ currentUser: user, sessionChecked: true });
     return user;
   },
 

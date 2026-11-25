@@ -11,6 +11,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { socketClient } from '@/lib/socketClient';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { formatFee } from '@/lib/subscription';
 import MessageFeed from '@/components/MessageFeed';
 import MessageComposer from '@/components/MessageComposer';
 import OnlineStatus from '@/components/OnlineStatus';
@@ -43,6 +44,7 @@ import type { ChatView, User, Message } from '@/types';
 const AdminDashboard = () => {
   const { workspaceId } = useParams() as { workspaceId: string };
   const router = useRouter();
+  const sessionChecked = useAuthStore((s) => s.sessionChecked);
   const { currentUser, logout, getUsersByAdmin, deleteUser, toggleUserChat, getMaskedPhone, getUserById, getUserByPhone, createUser, updateUser } = useAuthStore();
   const { sendMessage, deleteMessage, getDMMessages, getGroupMessages, getConversationPreview, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceBySlug, toggleGlobalChat, toggleAutoDelete, setAutoDeleteDays, updateAd } = useWorkspaceStore();
@@ -55,7 +57,9 @@ const AdminDashboard = () => {
   });
   const { getGroupsByWorkspace, getGroupById } = useGroupStore();
   const { addPaymentNotification } = useNotificationStore();
-  const { recordPayment, getPaymentStatus, getDaysRemaining, getSubscription, ensureSubscription, getBillingCycleDays } = usePaymentStore();
+  const { claimPayment, getPaymentStatus, getDaysRemaining, getSubscription, getBillingCycleDays, isMessagingPaused } = usePaymentStore();
+  const [claimNote, setClaimNote] = useState('');
+  const [claiming, setClaiming] = useState(false);
 
   const [chatView, setChatView] = useState<ChatView>({ type: 'dm', userId: '' });
   const [showSidebar, setShowSidebar] = useState(true);
@@ -115,10 +119,11 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    if (!sessionChecked) return;
     if (!currentUser || currentUser.role !== 'admin' || currentUser.workspaceId !== workspaceId) {
       router.replace('/');
     }
-  }, [currentUser, workspaceId, router]);
+  }, [sessionChecked, currentUser, workspaceId, router]);
 
   useEffect(() => {
     if (!currentUser || !workspaceId) return;
@@ -148,6 +153,7 @@ const AdminDashboard = () => {
   const autoDeleteEnabled = workspace?.autoDeleteMessages ?? false;
   const autoDeleteDays = workspace?.autoDeleteDays ?? 7;
   const messagingEnabled = workspace?.messagingEnabled !== false;
+  const subscriptionPaused = currentUser ? isMessagingPaused(currentUser.id) : false;
   const users = getUsersByAdmin(currentUser.id);
   const groups = getGroupsByWorkspace(workspaceId!);
 
@@ -261,13 +267,17 @@ const AdminDashboard = () => {
     toast.success(`Auto-delete set to ${days} days`);
   };
 
-  const handlePayNow = async () => {
+  // Tells the super admin a payment was made; the due date only moves once they confirm it
+  const handleClaimPayment = async () => {
+    setClaiming(true);
     try {
-      await ensureSubscription(currentUser.id, currentUser.displayName, workspaceId!);
-      await recordPayment(currentUser.id, currentUser.displayName, workspaceId!);
-      toast.success('Payment recorded — super admin notified');
+      await claimPayment(currentUser.id, claimNote.trim() || undefined);
+      setClaimNote('');
+      toast.success('Super admin notified — your payment will be confirmed shortly');
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || 'Failed to record payment');
+      toast.error((err as Error)?.message || 'Failed to notify super admin');
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -553,7 +563,7 @@ const AdminDashboard = () => {
                           <div className="bg-background/60 rounded-lg p-2">
                             <p className="text-muted-foreground">Monthly Fee</p>
                             <p className="font-semibold text-foreground mt-0.5">
-                              {sub?.monthlyAmount ? `$${sub.monthlyAmount}` : 'Not set'}
+                              {sub?.monthlyAmount ? formatFee(sub.monthlyAmount) : 'Not set'}
                             </p>
                           </div>
                           <div className="bg-background/60 rounded-lg p-2">
@@ -574,19 +584,32 @@ const AdminDashboard = () => {
                             {sub.nextDueAt && ` · Next due: ${format(new Date(sub.nextDueAt), 'MMM d, yyyy')}`}
                           </p>
                         )}
-                        {sub?.paymentActive === false ? (
+                        {status === 'not_set' ? (
                           <p className="text-xs text-center text-muted-foreground py-1">
                             Payment not currently required
                           </p>
+                        ) : sub?.pendingClaim ? (
+                          <p className="text-xs text-center text-muted-foreground py-1">
+                            Payment of {formatFee(sub.pendingClaim.amount)} reported on {format(new Date(sub.pendingClaim.claimedAt), 'MMM d')}, waiting for super admin to confirm
+                          </p>
                         ) : (
-                          <Button
-                            size="sm"
-                            className="w-full h-8 text-xs"
-                            onClick={handlePayNow}
-                          >
-                            <CreditCard className="w-3.5 h-3.5 mr-1.5" />
-                            Pay Now
-                          </Button>
+                          <div className="space-y-2">
+                            {subscriptionPaused && (
+                              <p className="text-xs text-destructive font-medium">
+                                Messaging is paused until your payment is confirmed.
+                              </p>
+                            )}
+                            <Input
+                              value={claimNote}
+                              onChange={(e) => setClaimNote(e.target.value)}
+                              placeholder="How you paid (e.g. UPI ref, bank transfer)"
+                              className="h-8 text-xs"
+                            />
+                            <Button size="sm" className="w-full h-8 text-xs" onClick={handleClaimPayment} disabled={claiming}>
+                              <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+                              {claiming ? 'Sending...' : "I've paid, notify super admin"}
+                            </Button>
+                          </div>
                         )}
                       </div>
                     );
@@ -819,7 +842,7 @@ const AdminDashboard = () => {
           <TypingIndicator name={activeDMUser?.displayName || 'User'} />
         )}
 
-        {messagingEnabled ? (
+        {messagingEnabled && !subscriptionPaused ? (
           <MessageComposer
             onSend={handleSend}
             onTyping={handleTyping}
@@ -829,7 +852,11 @@ const AdminDashboard = () => {
         ) : (
           <div className="px-4 py-3 bg-destructive/10 border-t border-destructive/20 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-            <p className="text-xs text-destructive font-medium">Messaging has been disabled by super admin.</p>
+            <p className="text-xs text-destructive font-medium">
+              {messagingEnabled
+                ? 'Subscription overdue: messaging is paused until your payment is confirmed (Settings, Monthly Subscription).'
+                : 'Messaging has been disabled by super admin.'}
+            </p>
           </div>
         )}
 

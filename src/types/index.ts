@@ -121,6 +121,7 @@ export interface AdminSubscription {
   nextDueAt?: number;       // lastPaidAt + billingCycleDays (ms)
   history: PaymentRecord[];
   paymentActive?: boolean;  // super admin can start/stop payment requirement
+  pendingClaim?: { id: string; claimedAt: number; amount: number; note?: string }; // admin's "I've paid", awaiting confirmation
 }
 
 export type ChatView = 'broadcast' | { type: 'dm'; userId: string } | { type: 'group'; groupId: string };

@@ -30,6 +30,7 @@ import type { ChatView } from '@/types';
 
 const UserDashboard = () => {
   const router = useRouter();
+  const sessionChecked = useAuthStore((s) => s.sessionChecked);
   const { currentUser, logout, getUserById, getUserByPhone, getMaskedPhone, createUser, getUsersByAdmin, updateUser } = useAuthStore();
   const { getDMMessages, getGroupMessages, sendMessage, deleteMessage, markAsRead, getUnreadDMCount, getUnreadGroupCount } = useMessageStore();
   const { getWorkspaceByAdmin } = useWorkspaceStore();
@@ -91,10 +92,11 @@ const UserDashboard = () => {
   }, [chatView, currentUser, _slug]);
 
   useEffect(() => {
+    if (!sessionChecked) return;
     if (!currentUser || currentUser.role !== 'user') {
       router.replace('/');
     }
-  }, [currentUser, router]);
+  }, [sessionChecked, currentUser, router]);
 
   // Show profile setup modal when user's name is still the admin-assigned default
   // (displayName equals their phone number or username)

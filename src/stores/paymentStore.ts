@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 import type { AdminSubscription, PaymentNotification } from '@/types';
+import {
+  DEFAULT_BILLING_DAYS, MS_PER_DAY, getPaymentStatus as statusOf, isMessagingPaused as pausedOf,
+  type PaymentStatus,
+} from '@/lib/subscription';
 
-const DEFAULT_BILLING_DAYS = 28;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export type { PaymentStatus };
 
-export type PaymentStatus = 'active' | 'expiring_soon' | 'overdue' | 'not_set';
-
-const generateId = () => Math.random().toString(36).substring(2, 15);
+async function patchSubscription(adminId: string, body: Record<string, unknown>): Promise<AdminSubscription | null> {
+  const res = await fetch(`/api/payments/subscriptions/${adminId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.ok ? res.json() : null;
+}
 
 interface PaymentState {
   subscriptions: AdminSubscription[];
@@ -20,8 +28,11 @@ interface PaymentState {
   togglePaymentActive: (adminId: string, adminName: string, workspaceId: string) => Promise<void>;
   getSubscription: (adminId: string) => AdminSubscription | undefined;
   getAllSubscriptions: () => AdminSubscription[];
-  recordPayment: (adminId: string, adminName: string, workspaceId: string, note?: string) => Promise<void>;
+  recordPayment: (adminId: string, note?: string) => Promise<void>;
+  claimPayment: (adminId: string, note?: string) => Promise<void>;
+  rejectClaim: (adminId: string) => Promise<void>;
   getPaymentStatus: (adminId: string) => PaymentStatus;
+  isMessagingPaused: (adminId: string) => boolean;
   getDaysRemaining: (adminId: string) => number | null;
   getDaysOverdue: (adminId: string) => number | null;
   getBillingCycleDays: (adminId: string) => number;
@@ -60,20 +71,14 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
 
   setMonthlyAmount: async (adminId, amount) => {
     set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? { ...sub, monthlyAmount: amount } : sub) }));
-    await fetch(`/api/payments/subscriptions/${adminId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ monthlyAmount: amount }),
-    });
+    const saved = await patchSubscription(adminId, { monthlyAmount: amount });
+    if (saved) set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? saved : sub) }));
   },
 
   setBillingCycleDays: async (adminId, days) => {
     set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? { ...sub, billingCycleDays: days } : sub) }));
-    await fetch(`/api/payments/subscriptions/${adminId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ billingCycleDays: days }),
-    });
+    const saved = await patchSubscription(adminId, { billingCycleDays: days });
+    if (saved) set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? saved : sub) }));
   },
 
   togglePaymentActive: async (adminId, adminName, workspaceId) => {
@@ -89,22 +94,20 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
       });
     } else {
       set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? { ...sub, paymentActive } : sub) }));
-      await fetch(`/api/payments/subscriptions/${adminId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentActive }),
-      });
+      const saved = await patchSubscription(adminId, { paymentActive });
+      if (saved) set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? saved : sub) }));
     }
   },
 
   getSubscription: (adminId) => get().subscriptions.find(s => s.adminId === adminId),
   getAllSubscriptions: () => get().subscriptions,
 
-  recordPayment: async (adminId, adminName, workspaceId, note) => {
+  // Superadmin only (server-enforced): records a payment and starts the next cycle
+  recordPayment: async (adminId, note) => {
     const res = await fetch('/api/payments/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminId, adminName, workspaceId, note }),
+      body: JSON.stringify({ adminId, note }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -119,15 +122,31 @@ export const usePaymentStore = create<PaymentState>()((set, get) => ({
     }));
   },
 
-  getPaymentStatus: (adminId) => {
-    const sub = get().subscriptions.find(s => s.adminId === adminId);
-    // Not required if no subscription, payment explicitly stopped, or fee never set
-    if (!sub || sub.paymentActive === false || sub.monthlyAmount === 0 || !sub.nextDueAt) return 'not_set';
-    const daysRemaining = Math.ceil((sub.nextDueAt - Date.now()) / MS_PER_DAY);
-    if (daysRemaining < 0) return 'overdue';
-    if (daysRemaining <= 7) return 'expiring_soon';
-    return 'active';
+  // Admin: "I've paid" — waits for the superadmin to confirm
+  claimPayment: async (adminId, note) => {
+    const res = await fetch('/api/payments/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { error?: string }).error || 'Failed to send payment claim');
+    set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? data.subscription : sub) }));
   },
+
+  rejectClaim: async (adminId) => {
+    const res = await fetch('/api/payments/claim', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { error?: string }).error || 'Failed to reject claim');
+    set(s => ({ subscriptions: s.subscriptions.map(sub => sub.adminId === adminId ? data.subscription : sub) }));
+  },
+
+  getPaymentStatus: (adminId) => statusOf(get().subscriptions.find(s => s.adminId === adminId)),
+  isMessagingPaused: (adminId) => pausedOf(get().subscriptions.find(s => s.adminId === adminId)),
 
   getDaysRemaining: (adminId) => {
     const sub = get().subscriptions.find(s => s.adminId === adminId);

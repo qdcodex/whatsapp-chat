@@ -3,7 +3,11 @@ type BroadcastEvent = {
   action: 'add' | 'update' | 'delete';
   data: any;
   timestamp: number;
+  sourceId?: string; // the tab that sent it
 };
+
+// Unique per page load, so a tab ignores events it sent itself
+const TAB_ID = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 class BroadcastChannelSync {
   private messageChannel: BroadcastChannel | null = null;
@@ -11,17 +15,21 @@ class BroadcastChannelSync {
   private messageListeners: Set<(event: BroadcastEvent) => void> = new Set();
   private presenceListeners: Set<(event: BroadcastEvent) => void> = new Set();
 
+  // Called by both the message and presence stores; opening the channels twice
+  // made a tab receive its own events, and re-broadcasting them looped forever.
   initialize() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || this.messageChannel) return;
 
     try {
       this.messageChannel = new BroadcastChannel('broadcast-hub-messages');
       this.messageChannel.onmessage = (event) => {
+        if (event.data?.sourceId === TAB_ID) return;
         this.messageListeners.forEach((listener) => listener(event.data));
       };
 
       this.presenceChannel = new BroadcastChannel('broadcast-hub-presence');
       this.presenceChannel.onmessage = (event) => {
+        if (event.data?.sourceId === TAB_ID) return;
         this.presenceListeners.forEach((listener) => listener(event.data));
       };
     } catch (error) {
@@ -36,6 +44,7 @@ class BroadcastChannelSync {
       action,
       data,
       timestamp: Date.now(),
+      sourceId: TAB_ID,
     };
     this.messageChannel.postMessage(event);
   }
@@ -47,6 +56,7 @@ class BroadcastChannelSync {
       action,
       data,
       timestamp: Date.now(),
+      sourceId: TAB_ID,
     };
     this.presenceChannel.postMessage(event);
   }
@@ -64,6 +74,8 @@ class BroadcastChannelSync {
   destroy() {
     this.messageChannel?.close();
     this.presenceChannel?.close();
+    this.messageChannel = null;
+    this.presenceChannel = null;
     this.messageListeners.clear();
     this.presenceListeners.clear();
   }
