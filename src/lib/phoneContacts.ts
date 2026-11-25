@@ -41,11 +41,12 @@ export async function readPhoneContacts(): Promise<PhoneContact[]> {
   return [...byPhone.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function matchContacts(phones: string[], workspaceId: string): Promise<Record<string, ContactMatch>> {
+// The server matches against the logged-in admin's own workspace
+export async function matchContacts(phones: string[]): Promise<Record<string, ContactMatch>> {
   const res = await fetch('/api/contacts/match', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phones, workspaceId }),
+    body: JSON.stringify({ phones }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Could not check contacts');

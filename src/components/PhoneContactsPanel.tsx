@@ -27,7 +27,7 @@ const PhoneContactsPanel = ({ workspaceId, groupName, joinLink, memberIds, onAdd
     setLoading(true);
     try {
       const list = await readPhoneContacts();
-      const found = await matchContacts(list.map((c) => c.phone), workspaceId);
+      const found = await matchContacts(list.map((c) => c.phone));
       setContacts(list);
       setMatches(found);
     } catch (err) {
