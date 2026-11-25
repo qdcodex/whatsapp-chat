@@ -17,12 +17,17 @@ export async function POST(req: NextRequest) {
 
     const key = normalizePhone(phone);
 
-    // Don't spend an SMS on a login attempt for a number with no account
+    // Phone login is for members only; admins sign in with username and password.
+    // Checked before sending so no SMS is spent on numbers that can't log in this way.
     if (purpose === 'login') {
       await connectDB();
-      const users = await UserModel.find({ phone: { $exists: true, $ne: '' } }, { phone: 1 }).lean().exec();
-      if (!users.some((u) => u.phone && normalizePhone(u.phone) === key)) {
+      const users = await UserModel.find({ phone: { $exists: true, $ne: '' } }, { phone: 1, role: 1 }).lean().exec();
+      const account = users.find((u) => u.phone && normalizePhone(u.phone) === key);
+      if (!account) {
         return NextResponse.json({ error: 'No account found with this phone number' }, { status: 404 });
+      }
+      if (account.role !== 'user') {
+        return NextResponse.json({ error: 'Admins sign in with username and password' }, { status: 403 });
       }
     }
     const now = Date.now();

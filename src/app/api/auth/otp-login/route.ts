@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'No account found with this phone number' }, { status: 404 });
     }
+    // Admin and superadmin accounts may only use username + password
+    if (user.role !== 'user') {
+      return NextResponse.json({ error: 'Admins sign in with username and password' }, { status: 403 });
+    }
 
     const res = NextResponse.json(publicUser(user));
     await setSessionCookie(res, user);
